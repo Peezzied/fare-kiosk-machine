@@ -25,16 +25,16 @@ TransportData handleTransport(AsyncWebSocketClient *client, uint8_t *data, size_
   return result;
 }
 
-// void printTransportData(const TransportData &data) {
-//   // Create an array of property names
-//   String propertyNames[] = { "origin", "destination", "passenger", "fare" };
-//   String propertyValues[] = { data.origin, data.destination, data.passenger, String(data.fare) };
+void printTransportData(const TransportData &data) {
+  // Create an array of property names
+  String propertyNames[] = { "origin", "destination", "passenger", "fare" };
+  String propertyValues[] = { data.origin, data.destination, data.passenger, String(data.fare) };
 
-//   // Loop through the properties and print each one
-//   for (int i = 0; i < 4; i++) {
-//     Serial.print(propertyNames[i]);
-//     Serial.print(": ");
-//     Serial.println(propertyValues[i]);
-//   }
-// }
+  // Loop through the properties and print each one
+  for (int i = 0; i < 4; i++) {
+    Serial.print(propertyNames[i]);
+    Serial.print(": ");
+    Serial.println(propertyValues[i]);
+  }
+}
 

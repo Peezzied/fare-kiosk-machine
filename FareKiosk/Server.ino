@@ -11,11 +11,13 @@ void initWiFi() {
 
 void initWebSocket() {
   // Capture the required variables (client, data, and len) in the lambda's capture list
+  Serial.println("\nInitialized Websocket");
   ws.onEvent([](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
     // Capture client, data, and len in the lambda and pass them to the webSocketEvent function
     webSocketEvent(server, client, type, arg, data, len, [&]() {
       // Pass client, data, and len to handleTransport
       tripData = handleTransport(client, data, len);  // Pass data and len here
+      printTransportData(tripData);
     });
   });
   server.addHandler(&ws);
@@ -24,30 +26,31 @@ void initWebSocket() {
 void webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len, std::function<void()> handleEvtData) {
   switch (type) {
     case WS_EVT_CONNECT:
-      Serial.println("WebSocket client connected");
+      Serial.println("\nWebSocket client connected");
       break;
 
     case WS_EVT_DISCONNECT:
-      Serial.println("WebSocket client disconnected");
+      Serial.println("\nWebSocket client disconnected");
       break;
 
     case WS_EVT_DATA:
+      Serial.println("\nWebSocket client sent data");
       handleEvtData();  // Invoke the callback function (handleEvtData)
       break;
 
     case WS_EVT_PONG:
       // Handle PONG event if necessary
-      Serial.println("WebSocket PONG received");
+      Serial.println("\nWebSocket PONG received");
       break;
 
     case WS_EVT_ERROR:
       // Handle error event if necessary
-      Serial.println("WebSocket error occurred");
+      Serial.println("\nWebSocket error occurred");
       break;
 
     default:
       // Handle unknown events
-      Serial.println("Unknown WebSocket event");
+      Serial.println("\nUnknown WebSocket event");
       break;
   }
 }

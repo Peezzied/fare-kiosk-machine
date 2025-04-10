@@ -46,13 +46,12 @@ void setup() {
   initWebSocket();
 
   server.begin();
-  Serial.println("TCP server started");
 }
 
 void loop() {
 
   // server.handleClient();
-  ws.cleanupClients();
+  // ws.cleanupClients();
   // client.stop();
   // Serial.println("Done with client");
 }
