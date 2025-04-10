@@ -42,13 +42,8 @@ void setup() {
   // Serial.print("AP IP address: ");
   // Serial.println(WiFi.softAPIP());
 
-  initWiFi()
-  initWebSocket()
-
-  // server.on("/transport", HTTP_POST, [](){
-  //   tripData = handleTransport(server);
-  //   printTransportData(tripData);
-  // });
+  initWiFi();
+  initWebSocket();
 
   server.begin();
   Serial.println("TCP server started");
