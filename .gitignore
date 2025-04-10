@@ -1,0 +1,7 @@
+# Ignore everything
+/*
+
+# Don't ignore specific files or directories
+!.gitignore
+!README.md
+!FareKiosk/
