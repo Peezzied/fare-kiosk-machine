@@ -1,13 +1,27 @@
-void initWiFi() {
-  WiFi.begin(ssid_sta, pass_sta);
-  Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+#ifdef DEV_MODE
+  void initWiFi() {
+    WiFi.begin(ssid_sta, pass);
+    Serial.print("Connecting to WiFi");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("\nConnected to WiFi");
+    Serial.println(WiFi.localIP());
   }
-  Serial.println("\nConnected to WiFi");
-  Serial.println(WiFi.localIP());
-}
+#else
+  void initWiFI() {
+    if (!WiFi.softAP(ssid, pass)) {
+      log_e("Soft AP creation failed.");
+      while (1);
+    }
+    Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(ssid);
+    Serial.print("AP IP address: ");
+    Serial.println(WiFi.softAPIP());
+  }
+#endif
 
 void initWebSocket() {
   // Capture the required variables (client, data, and len) in the lambda's capture list
