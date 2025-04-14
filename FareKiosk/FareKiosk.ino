@@ -2,10 +2,16 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include <ESP32Servo.h>
 
 #define DEV_MODE
 
-// Coin Bill
+//Servos
+Servo dispense1, dispense2, dispense3, dispense4, gate;
+Servo servos[] = {dispense1, dispense2, dispense3, dispense4, gate};
+int numServos = sizeof(servos) / sizeof(servos[0]);
+
+// Crediting
 struct Credit {
   int coin;
   int bill;
@@ -19,7 +25,6 @@ unsigned long lastPulseTime = 0;
 volatile int coinCount = 0;
 volatile bool isCoinInsert = false;
 
-
 // Server
 struct TransportData {
   String origin;
@@ -27,21 +32,20 @@ struct TransportData {
   String passenger;
   int fare;
 };
+TransportData tripData;
 const char *ssid = "Manila to Novaliches Transit";
 const char *ssid_sta = "Converge_2.4GHz_23F7";
 const char *pass = "5bDRg6Tc";
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
-TransportData tripData;
-bool isComplete;
 
 void setup() {
   Serial.begin(115200);
   Serial.println();
   Serial.println("Configuring access point...");
   Serial.println("");
-  
+
   initCoin();
 
   initWiFi();
