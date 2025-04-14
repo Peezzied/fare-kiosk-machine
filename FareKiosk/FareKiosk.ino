@@ -7,9 +7,12 @@
 #define DEV_MODE
 
 //Servos
-Servo dispense1, dispense2, dispense3, dispense4, gate;
+Servo dispense1;
+Servo dispense2;
+Servo dispense3;
+Servo dispense4;
+Servo gate;
 Servo servos[] = {dispense1, dispense2, dispense3, dispense4, gate};
-int numServos = sizeof(servos) / sizeof(servos[0]);
 
 // Crediting
 struct Credit {

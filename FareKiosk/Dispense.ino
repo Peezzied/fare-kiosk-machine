@@ -12,9 +12,9 @@ void initDispense() {
   dispense4.attach(23);
   gate.attach(15);
 #endif
-  servosAction([&](int *i) {
+  actionArrayInvoke([&](int i) {
     servos[i].write(0);
-  })
+  }, (sizeof(servos) / sizeof(servos[0])));
 }
 
 void dispense() {
@@ -22,8 +22,8 @@ void dispense() {
   }
 }
 
-void servosAction(std::function<void(int)> servo) {
-  for (int i = 0; i < numServos; i++) {
-    servo(i)
-  }
-}
+// void actionInvoke(std::function<void(int)> servo) {
+//   for (int i = 0; i < numServos; i++) {
+//     servo(i)
+//   }
+// }
