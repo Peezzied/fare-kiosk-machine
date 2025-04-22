@@ -1,5 +1,5 @@
 #include "InterfaceServer.h"
-#include "../Config.h"
+#include "../models/Config.h"
 
 InterfaceServer::InterfaceServer() : server(80), ws("/ws"), tripData{"Unknown", "Unknown", "Unknown", 0} {}
 
@@ -29,8 +29,7 @@ void InterfaceServer::begin() {
 void InterfaceServer::beginWebsocket() {
   Serial.println("\nInitialized WebSocket");
 
-  ws.onEvent([this](AsyncWebSocket *server, AsyncWebSocketClient *client,
-                    AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  ws.onEvent([this](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
     this->_webSocketEvent(server, client, type, arg, data, len, [=]() {
       tripData = this->_handleTransport(client, data, len);
       this->_printTransportData(tripData);
@@ -64,6 +63,7 @@ void InterfaceServer::_webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClie
       break;
   }
 }
+
 
 InterfaceServer::TransportData InterfaceServer::_handleTransport(AsyncWebSocketClient *client, uint8_t *data, size_t len) {
   TransportData result;

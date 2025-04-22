@@ -1,5 +1,5 @@
-inline void actionArrayInvoke(std::function<void(int)> servo, int size) {
+inline void actionArrayInvoke(std::function<void(int)> invoke, int size) {
   for (int i = 0; i < size; i++) {
-    servo(i);  // Call the function with both parameters
+    invoke(i);  // Call the function with both parameters
   }
 }
