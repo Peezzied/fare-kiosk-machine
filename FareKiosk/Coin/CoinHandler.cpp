@@ -21,6 +21,7 @@ void CoinHandler::addCredit(int amount) {
 
 void CoinHandler::begin() {
   attachInterrupt(COIN_PIN, coinIsr, FALLING);
+  // add pinMode for inhibit
 }
 
 void CoinHandler::taskEntryPoint(void* pvParameters) {
@@ -29,28 +30,22 @@ void CoinHandler::taskEntryPoint(void* pvParameters) {
 }
 
 void CoinHandler::taskLoop() {
+  uint32_t notificationValue;
+
   while (true) {
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    Serial.println("Running task...");
-    vTaskDelay(pdMS_TO_TICKS(1000));
-
-    bits = xEventGroupWaitBits(
-      machineEventGroup,                // The event group
-      COIN_FULL_BIT | COIN_EMPTY_BIT,  // Bits to wait for
-      pdTRUE,                           // Clear bits when returned
-      pdFALSE,                          // Wait for ANY bit (not ALL)
-      portMAX_DELAY                     // Wait indefinitely
-    );
-
-    if (bits & COIN_FULL_BIT) {
-      // notify rotary
-      // notify rotary sensor
+    if (ulTaskNotifyTakeIndexed(0, pdTRUE, 0) > 0) {
+      processCoin();
     }
-
-    if (bits & COIN_EMPTY_BIT) {
-      // "need change" condition
-      // notify dispense task
+    if (xTaskNotifyWait(1, 0x00, 0xFFFFFFFF, &notificationValue, 0) == pdTRUE) {
+      if (notificationValue & COIN_FULL) {
+        // disable coin acceptor
+      }
+      if (notificationValue & COIN_READY) {
+        // enable coin acceptor
+        // coinInsert false
+      }
     }
+    vTaskDelay(1);
   }
 }
 
@@ -61,9 +56,25 @@ void CoinHandler::task() {
     2048,            // Stack size
     this,            // Pass 'this' to access member data
     1,               // Priority
-    taskHandle,      // Task handle
+    &taskHandle,      // Task handle
     1                // Core (0 or 1)
   );
+}
+
+void IRAM_ATTR CoinHandler::coinIsr() {
+  if (instance) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the task from ISR
+    xTaskNotifyIndexedFromISR(taskHandle, 0, &xHigherPriorityTaskWoken);
+
+    // Request context switch if needed
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+    instance->coinCount++;
+    instance->lastPulseTime = millis();
+    instance->coinInsert = true;
+  }
 }
 
 void CoinHandler::processCoin() {
@@ -103,10 +114,3 @@ bool CoinHandler::isCoinInserted() const {
   return coinInsert;
 }
 
-void IRAM_ATTR CoinHandler::coinIsr() {
-  if (instance) {
-    instance->coinCount++;
-    instance->lastPulseTime = millis();
-    instance->coinInsert = true;
-  }
-}

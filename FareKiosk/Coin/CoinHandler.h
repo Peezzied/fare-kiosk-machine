@@ -8,7 +8,7 @@ extern "C" {
 
 class CoinHandler {
 private:
-  TaskHandle_t taskHandle
+  TaskHandle_t taskHandle;
 
   Credit &credit;
   static CoinHandler* instance;
