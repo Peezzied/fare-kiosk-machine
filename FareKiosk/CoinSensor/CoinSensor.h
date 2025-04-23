@@ -1,9 +1,13 @@
 class CoinSensor {
 private: 
-  const int pinsShort[] = { 32, 33, 27, 14 };
-  const int pinsFull[] = { 32, 33, 27, 14 };
+  static constexpr int NUM_SENSORS = 4;
+  const int pinsShort[NUM_SENSORS] = { 32, 33, 27, 14 };
+  const int pinsFull[NUM_SENSORS] = { 32, 33, 27, 14 };
+
+  SensorData &sensorData;
 
   TaskHandle_t taskHandle;
+  TaskHandle_t coinTaskHandle;
   
   int coinShort();
   int coinFull();
@@ -11,8 +15,7 @@ private:
   void taskLoop();
 
 public:
-  CoinSensor(TaskHandle_t taskHandle) : taskHandle(taskHandle) {}
-  void begin();
+  CoinSensor(SensorData &sensorDataObj, TaskHandle_t handle);
+  void begin(TaskHandle_t *coinTaskHandle);
   void task();
-  void notifyExternal(TaskHandle_t *externalHandle);
 }
