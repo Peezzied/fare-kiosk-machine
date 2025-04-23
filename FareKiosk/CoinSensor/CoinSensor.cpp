@@ -37,7 +37,7 @@ void CoinSensor::taskLoop() {
       taskENTER_CRITICAL(&pinMux);
       sensorData.full = fullPin;
       taskEXIT_CRITICAL(&pinMux);
-      xTaskNotifyIndexed(coinTaskHandle, 1, COIN_FULL, eSetBits);
+      xTaskNotify(coinTaskHandle, COIN_FULL, eSetValueWithOverwrite);
     }
 
     int shortPin = coinShort();
@@ -47,7 +47,7 @@ void CoinSensor::taskLoop() {
       taskENTER_CRITICAL(&pinMux);
       sensorData.shortEmpty = shortPin;
       taskEXIT_CRITICAL(&pinMux);
-      xTaskNotifyIndexed(coinTaskHandle, 1, COIN_SHORT, eSetBits);
+      xTaskNotify(coinTaskHandle, COIN_SHORT, eSetValueWithOverwrite);
     }
   }
 }
@@ -78,4 +78,4 @@ void CoinSensor::task() {
     1,                // Core (0 or 1)
   );
 }
-}
+

@@ -37,10 +37,10 @@ void CoinHandler::taskLoop() {
         processCoin();
       } else {
         // Handle coin acceptor status flags
-        if (notificationValue & COIN_FULL) {
+        if (notificationValue == COIN_FULL) {
           // Disable coin acceptor
         }
-        if (notificationValue & COIN_READY) {
+        if (notificationValue == COIN_READY) {
           // Enable coin acceptor
           coinInsert = false;
         }
