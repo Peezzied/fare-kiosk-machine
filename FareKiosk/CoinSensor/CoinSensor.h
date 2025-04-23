@@ -1,11 +1,9 @@
 #pragma once
 
-#include "Arduino.h"
-extern "C" {
-  #include "freertos/FreeRTOS.h"
-  #include "freertos/task.h"
-  #include "freertos/portmacro.h"
-}
+#include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/portmacro.h>
 #include "../models/SensorData.h" // Assuming you have this
 
 
@@ -14,6 +12,7 @@ private:
   static constexpr int NUM_SENSORS = 4;
   const int pinsShort[NUM_SENSORS] = { 32, 33, 27, 14 };
   const int pinsFull[NUM_SENSORS] = { 32, 33, 27, 14 };
+  portMUX_TYPE pinMux = portMUX_INITIALIZER_UNLOCKED;
 
   SensorData &sensorData;
   TaskHandle_t &taskHandle;

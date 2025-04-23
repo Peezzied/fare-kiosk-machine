@@ -1,23 +1,18 @@
-#include <ESP32Servo.h>
 #include "models/Credit.h"
-#include "Coin/CoinHandler.h"
-#include "Coin/CoinHandler.cpp"
 #include "InterfaceServer/InterfaceServer.h"
 #include "InterfaceServer/InterfaceServer.cpp"
+#include "Coin/CoinHandler.h"
+#include "Coin/CoinHandler.cpp"
+// #include "CoinSensor/CoinSensor.h"
+// #include "CoinSensor/CoinSensor.cpp"
 
-//Servos
-Servo dispense1;
-Servo dispense2;
-Servo dispense3;
-Servo dispense4;
-Servo gate;
-Servo servos[] = {dispense1, dispense2, dispense3, dispense4, gate};
+TaskHandle_t coinTask = NULL;
 
 
 Credit credit;
 
-CoinHandler coinHandler(credit);
-InterfaceServer interfaceServer;
+CoinHandler coinHandler(credit, coinTask);
+// InterfaceServer interfaceServer;
 
 
 
@@ -28,9 +23,10 @@ void setup() {
   Serial.println("");
 
   coinHandler.begin();
-  interfaceServer.begin();
-  interfaceServer.beginWebsocket();
+  coinHandler.task();
 
+  // interfaceServer.begin();
+  // interfaceServer.beginWebsocket();
 }
 
 void loop() {

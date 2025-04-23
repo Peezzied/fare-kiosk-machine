@@ -9,15 +9,16 @@ CoinHandler::CoinHandler(Credit &creditObj, TaskHandle_t &handle)
 }
 
 void CoinHandler::addCredit(int amount) {
-  taskENTER_CRITICAL();
+  taskENTER_CRITICAL(&coinMux);
   credit.coin += amount;
-  taskEXIT_CRITICAL();
+  taskEXIT_CRITICAL(&coinMux);
 }
 
 void CoinHandler::begin() {
+  Serial.println("CoinHandler Initialized");
   pinMode(COIN_PIN, INPUT_PULLUP);  // Set the coin pin as input
   attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinIsr, FALLING);
-  // add pinMode for inhibit
+  // Add inhibit pin logic if needed
 }
 
 void CoinHandler::taskEntryPoint(void* pvParameters) {
@@ -29,31 +30,36 @@ void CoinHandler::taskLoop() {
   uint32_t notificationValue;
 
   while (true) {
-    if (ulTaskNotifyTakeIndexed(0, pdTRUE, 0) > 0) {
-      processCoin();
-    }
-    if (xTaskNotifyWait(1, 0x00, 0xFFFFFFFF, &notificationValue, 0) == pdTRUE) {
-      if (notificationValue & COIN_FULL) {
-        // disable coin acceptor
+    // Wait for any notification
+    if (xTaskNotifyWait(0x00, 0xFFFFFFFF, &notificationValue, portMAX_DELAY) == pdTRUE) {
+      if (notificationValue == 0) {
+        // ISR coin pulse signal (no flags)
+        processCoin();
+      } else {
+        // Handle coin acceptor status flags
+        if (notificationValue & COIN_FULL) {
+          // Disable coin acceptor
+        }
+        if (notificationValue & COIN_READY) {
+          // Enable coin acceptor
+          coinInsert = false;
+        }
       }
-      if (notificationValue & COIN_READY) {
-        // enable coin acceptor
-        // coinInsert false
-      }
     }
+
     vTaskDelay(1);
   }
 }
 
 void CoinHandler::task() {
   xTaskCreatePinnedToCore(
-    taskEntryPoint,  // Static function
-    "CoinSensor",    // Task name
-    2048,            // Stack size
-    this,            // Pass 'this' to access member data
-    1,               // Priority
-    &taskHandle,      // Task handle
-    1                // Core (0 or 1)
+    taskEntryPoint,
+    "CoinSensor",
+    2048,
+    this,
+    1,
+    &taskHandle,
+    1
   );
 }
 
@@ -61,10 +67,9 @@ void IRAM_ATTR CoinHandler::coinIsr() {
   if (instance) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    // Notify the task from ISR
-    xTaskNotifyIndexedFromISR(instance->taskHandle, 0, 0, eSetBits, &xHigherPriorityTaskWoken);
-
-    // Request context switch if needed
+    // Send empty notification (value 0) to signal coin detected
+    xTaskNotifyFromISR(instance->taskHandle, 0, eSetValueWithoutOverwrite, &xHigherPriorityTaskWoken);
+    
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 
     instance->coinCount++;
@@ -101,4 +106,3 @@ void CoinHandler::processCoin() {
     }
   }
 }
-

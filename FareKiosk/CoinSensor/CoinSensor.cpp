@@ -34,9 +34,9 @@ void CoinSensor::taskLoop() {
     if (fullPin != -1) {
       Serial.printf("Coin full detected on pin: %d\n", fullPin);
       // handle full condition
-      taskENTER_CRITICAL();
+      taskENTER_CRITICAL(&pinMux);
       sensorData.full = fullPin;
-      taskEXIT_CRITICAL();
+      taskEXIT_CRITICAL(&pinMux);
       xTaskNotifyIndexed(coinTaskHandle, 1, COIN_FULL, eSetBits);
     }
 
@@ -44,9 +44,9 @@ void CoinSensor::taskLoop() {
     if (shortPin != -1) {
       Serial.printf("Coin short detected on pin: %d\n", shortPin);
       // handle short condition
-      taskENTER_CRITICAL();
+      taskENTER_CRITICAL(&pinMux);
       sensorData.shortEmpty = shortPin;
-      taskEXIT_CRITICAL();
+      taskEXIT_CRITICAL(&pinMux);
       xTaskNotifyIndexed(coinTaskHandle, 1, COIN_SHORT, eSetBits);
     }
   }
@@ -75,7 +75,7 @@ void CoinSensor::task() {
     this,            // Pass 'this' to access member data
     1,               // Priority
     &taskHandle,      // Task handle
-    1                // Core (0 or 1)
+    1,                // Core (0 or 1)
   );
 }
 }

@@ -1,12 +1,10 @@
 #pragma once
 
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/portmacro.h>
 #include "../models/Credit.h"
-extern "C" {
-  #include "freertos/FreeRTOS.h"
-  #include "freertos/task.h"
-  #include "freertos/portmacro.h"
-}
 
 class CoinHandler {
 private:
@@ -20,6 +18,8 @@ private:
   const int debounceDelay = 120;
   volatile unsigned long lastPulseTime = 0;
   volatile int coinCount = 0;
+  portMUX_TYPE coinMux = portMUX_INITIALIZER_UNLOCKED;
+
 
   static void IRAM_ATTR coinIsr();
   void addCredit(int amount);
