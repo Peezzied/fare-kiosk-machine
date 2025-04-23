@@ -3,14 +3,16 @@
 #include <Arduino.h>
 #include "../models/Credit.h"
 extern "C" {
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/task.h"
   #include "freertos/portmacro.h"
 }
 
 class CoinHandler {
 private:
-  TaskHandle_t taskHandle;
-
+  TaskHandle_t &taskHandle;
   Credit &credit;
+
   static CoinHandler* instance;
   volatile bool coinInsert;
 
@@ -25,10 +27,8 @@ private:
   void taskLoop();
 
 public:
-  CoinHandler(Credit &creditObj, TaskHandle_t handle);
+  CoinHandler(Credit &creditObj, TaskHandle_t &handle);
   void begin();
   void task();
   void processCoin();
-  Credit getCredit() const;
-  bool isCoinInserted() const;
 };

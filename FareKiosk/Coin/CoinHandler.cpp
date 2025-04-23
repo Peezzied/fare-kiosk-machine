@@ -1,14 +1,9 @@
 #include "CoinHandler.h"
-extern "C" {
-  #include "freertos/FreeRTOS.h"
-  #include "freertos/task.h"
-  #include "freertos/portmacro.h"
-}
 #include "../models/Config.h"
 
 CoinHandler* CoinHandler::instance = nullptr;
 
-CoinHandler::CoinHandler(Credit &creditObj, TaskHandle_t handle) 
+CoinHandler::CoinHandler(Credit &creditObj, TaskHandle_t &handle) 
   : credit(creditObj), coinInsert(false), taskHandle(handle) {
   instance = this;
 }
@@ -20,7 +15,8 @@ void CoinHandler::addCredit(int amount) {
 }
 
 void CoinHandler::begin() {
-  attachInterrupt(COIN_PIN, coinIsr, FALLING);
+  pinMode(COIN_PIN, INPUT_PULLUP);  // Set the coin pin as input
+  attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinIsr, FALLING);
   // add pinMode for inhibit
 }
 
@@ -66,7 +62,7 @@ void IRAM_ATTR CoinHandler::coinIsr() {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     // Notify the task from ISR
-    xTaskNotifyIndexedFromISR(taskHandle, 0, &xHigherPriorityTaskWoken);
+    xTaskNotifyIndexedFromISR(instance->taskHandle, 0, 0, eSetBits, &xHigherPriorityTaskWoken);
 
     // Request context switch if needed
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -104,13 +100,5 @@ void CoinHandler::processCoin() {
         break;
     }
   }
-}
-
-Credit CoinHandler::getCredit() const {
-  return credit;
-}
-
-bool CoinHandler::isCoinInserted() const {
-  return coinInsert;
 }
 

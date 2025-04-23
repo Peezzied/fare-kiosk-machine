@@ -1,11 +1,5 @@
-#include "Arduino.h"
-#include "KioskInstance.h"
-extern "C" {
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/portmacro.h"
-}
-
+#include "CoinSensor.h"
+#include "../models/Config.h"
 
 int CoinSensor::coinShort() {
   int result = -1;
@@ -23,8 +17,7 @@ int CoinSensor::coinFull() {
     if (digitalRead(pinsFull[i]) == LOW) {
       result = pinsFull[i];
     }
-  },
-                    NUM_SENSORS);
+  }, NUM_SENSORS);
   return result;
 }
 
@@ -37,38 +30,38 @@ void CoinSensor::taskLoop() {
   while (true) {
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     
-    int coinFull = coinFull();
-    if (coinFull != -1) {
+    int fullPin = coinFull();
+    if (fullPin != -1) {
       Serial.printf("Coin full detected on pin: %d\n", fullPin);
       // handle full condition
       taskENTER_CRITICAL();
-      sensorData.full = coinFull;
+      sensorData.full = fullPin;
       taskEXIT_CRITICAL();
       xTaskNotifyIndexed(coinTaskHandle, 1, COIN_FULL, eSetBits);
     }
 
-    int coinShort = coinShort();
-    if (coinShort != -1) {
+    int shortPin = coinShort();
+    if (shortPin != -1) {
       Serial.printf("Coin short detected on pin: %d\n", shortPin);
       // handle short condition
       taskENTER_CRITICAL();
-      sensorData.shortEmpty = coinShort;
+      sensorData.shortEmpty = shortPin;
       taskEXIT_CRITICAL();
       xTaskNotifyIndexed(coinTaskHandle, 1, COIN_SHORT, eSetBits);
     }
   }
 }
 
-CoinSensor::CoinSensor(SensorData &sensorDataObj, TaskHandle_t handle) : taskHandle(handle) sensorData(sensorDataObj) {}
+CoinSensor::CoinSensor(SensorData &sensorDataObj, TaskHandle_t &handle) : taskHandle(handle), sensorData(sensorDataObj) {}
 
-void CoinSensor::begin(TaskHandle_t* handle) {
-  coinTaskHandle = *handle
-  // coin short
+void CoinSensor::begin(TaskHandle_t &handle) {
+  coinTaskHandle = handle;
+  // coin full
   actionArrayInvoke([&](int i) {
-    pinMode(pinsShort[i], INPUT_PULLUP);
+    pinMode(pinsFull[i], INPUT_PULLUP);
   }, NUM_SENSORS);
 
-  // coinFull
+  // coin short
   actionArrayInvoke([&](int i) {
     pinMode(pinsShort[i], INPUT_PULLUP);
   }, NUM_SENSORS);
@@ -81,7 +74,7 @@ void CoinSensor::task() {
     2048,            // Stack size
     this,            // Pass 'this' to access member data
     1,               // Priority
-    taskHandle,      // Task handle
+    &taskHandle,      // Task handle
     1                // Core (0 or 1)
   );
 }
