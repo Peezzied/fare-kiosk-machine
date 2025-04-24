@@ -1,7 +1,7 @@
 #pragma once
 
 struct Credit {
-  int coin;
-  int bill;
+  uint8_t coin;
+  uint8_t bill;
 };
 

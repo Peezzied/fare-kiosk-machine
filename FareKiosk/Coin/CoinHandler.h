@@ -13,12 +13,11 @@ private:
   Credit &credit;
 
   static CoinHandler* instance;
-  volatile bool coinInsert;
 
-  static constexpr int COIN_PIN = 33;
-  const int debounceDelay = 120;
-  volatile unsigned long lastPulseTime = 0;
-  volatile int coinCount = 0;
+  static const uint8_t COIN_PIN = 27;
+  volatile unsigned long lastPulseMicros = 0;
+  const unsigned long debounceMicros = 2000;    // 3 ms
+  const unsigned long pulseTimeoutMicros = 300000; // 300 ms
   portMUX_TYPE coinMux = portMUX_INITIALIZER_UNLOCKED;
 
 
@@ -29,7 +28,7 @@ private:
 
 public:
   CoinHandler(Credit &creditObj, TaskHandle_t &handle);
-  void begin(TaskHandle_t &rotary);
+  void begin();
   void task();
-  void processCoin();
+  void processCoin(int &pulse);
 };

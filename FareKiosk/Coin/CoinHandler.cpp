@@ -4,7 +4,7 @@
 CoinHandler* CoinHandler::instance = nullptr;
 
 CoinHandler::CoinHandler(Credit &creditObj, TaskHandle_t &handle) 
-  : credit(creditObj), coinInsert(false), taskHandle(handle) {
+  : credit(creditObj), taskHandle(handle) {
   instance = this;
 }
 
@@ -21,29 +21,68 @@ void CoinHandler::begin() {
   // Add inhibit pin logic if needed
 }
 
+void IRAM_ATTR CoinHandler::coinIsr() {
+  if (instance) {
+    unsigned long now = micros();
+    if (now - instance->lastPulseMicros > instance->debounceMicros) {
+      instance->lastPulseMicros = now;
+      BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+      vTaskNotifyGiveFromISR(instance->taskHandle, &xHigherPriorityTaskWoken);
+      portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+  }
+}
+
+void CoinHandler::processCoin(int &pulseCount) {
+  // Decode and print coin value
+  int value = 0;
+  switch (pulseCount) {
+    case 1: value = 10; break;
+    case 2: value = 5; break;
+    case 3: value = 1; break;
+    case 4: value = 20; break;
+    default:
+      Serial.printf("Unknown coin: %d pulses\n", pulseCount);
+      break;
+  }
+
+  if (value > 0) {
+    addCredit(value);
+    Serial.printf("Coin inserted: Value = %d\n", credit.coin);
+  }
+
+  pulseCount = 0;
+}
+
 void CoinHandler::taskEntryPoint(void* pvParameters) {
   CoinHandler* instance = static_cast<CoinHandler*>(pvParameters);
   instance->taskLoop(); 
 }
 
 void CoinHandler::taskLoop() {
-  uint32_t notificationValue;
+  int pulseCount = 0;
+  unsigned long lastPulseTime = 0;
 
-  while (true) {
-    // Wait for any notification
-    if (xTaskNotifyWait(0x00, 0xFFFFFFFF, &notificationValue, portMAX_DELAY) == pdTRUE) {
-      if (notificationValue == COIN_FULL) {
-        // Disable coin acceptor
-        // send notification to rotary storage
-        xTaskNotify(rotaryHandle, COIN_EMPTY, eSetValueWithOverwrite);
+  for (;;) {
+    // Wait for ISR to notify pulse
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+    pulseCount++;
+    lastPulseTime = micros();
+
+    // Wait for end of pulse train
+    while (true) {
+      if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
+        pulseCount++;
+        lastPulseTime = micros();
+      } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
+        break;
       }
-      // factor the coin acceptor enable/disable flag
-      if (notificationValue == 0) {
-        processCoin();
-      }
-      vTaskDelay(1);
     }
+
+    processCoin(pulseCount);
   }
+}
 
 void CoinHandler::task() {
   xTaskCreatePinnedToCore(
@@ -57,46 +96,4 @@ void CoinHandler::task() {
   );
 }
 
-void IRAM_ATTR CoinHandler::coinIsr() {
-  if (instance) {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    // Send empty notification (value 0) to signal coin detected
-    xTaskNotifyFromISR(instance->taskHandle, 0, eSetValueWithoutOverwrite, &xHigherPriorityTaskWoken);
-    
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-    instance->coinCount++;
-    instance->lastPulseTime = millis();
-    instance->coinInsert = true;
-  }
-}
-
-void CoinHandler::processCoin() {
-  if ((millis() - lastPulseTime > debounceDelay) && coinInsert) {
-    coinInsert = false;
-    int pulses = coinCount;
-    coinCount = 0;
-
-    switch (pulses) {
-      case 1:
-        Serial.printf("Coin inserted: 10 pesos\n");
-        addCredit(10);
-        break;
-      case 2:
-        Serial.printf("Coin inserted: 1 peso\n");
-        addCredit(1);
-        break;
-      case 3:
-        Serial.printf("Coin inserted: 5 pesos\n");
-        addCredit(5);
-        break;
-      case 4:
-        Serial.printf("Coin inserted: 20 pesos\n");
-        addCredit(20);
-        break;
-      default:
-        break;
-    }
-  }
-}
