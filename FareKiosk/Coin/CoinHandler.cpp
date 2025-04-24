@@ -94,6 +94,17 @@ void CoinHandler::taskLoop() {
       }
     }
 
+    // Disable coin acceptor if full
+
+    // if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+    //   if (sensorData.full) {
+    //     digitalWrite(INHIBIT_PIN, HIGH);
+    //   } else {
+    //     digitalWrite(INHIBIT_PIN, LOW);
+    //   }
+    //   xSemaphoreGive(sensorDataMutex);
+    // }
+
     // maybe use mutex here if problem arises
     processCoin(pulseCount);
   }
