@@ -5,12 +5,18 @@
 #include <freertos/task.h>
 #include <freertos/portmacro.h>
 #include "../models/Credit.h"
+#include "../models/SensorData.h"
+#include "../CoinSensor/CoinSensor.h"
 
 class CoinHandler {
 private:
   TaskHandle_t &taskHandle;
   TaskHandle_t rotaryHandle;
+  
+  CoinSensor &coinSensor;
+  SensorData &sensorData;
   Credit &credit;
+  MutexHandle_t &sensorDataMutex;
 
   static CoinHandler* instance;
 
@@ -27,8 +33,8 @@ private:
   void taskLoop();
 
 public:
-  CoinHandler(Credit &creditObj, TaskHandle_t &handle);
-  void begin();
+  CoinHandler(Credit &creditObj, CoinSensor &coinSensorObj, TaskHandle_t &handle);
+  void begin(SensorData &sensorDataObj, MutexHandle_t &sensorDataMutexObj);
   void task();
   void processCoin(int &pulse);
 };

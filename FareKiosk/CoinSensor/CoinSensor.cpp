@@ -21,39 +21,34 @@ int CoinSensor::coinFull() {
   return result;
 }
 
-void CoinSensor::taskEntryPoint(void* pvParameters) {
-  CoinSensor* instance = static_cast<CoinSensor*>(pvParameters);
-  instance->taskLoop();  // Call the actual member function
-}
+void CoinSensor::checkSensors() {
+  if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+    SensorData.ready = false;
 
-void CoinSensor::taskLoop() {
-  while (true) {
-    int fullPin = coinFull();
-    if (fullPin != -1) {
-      Serial.printf("Coin full detected on pin: %d\n", fullPin);
-      // handle full condition
-      taskENTER_CRITICAL(&pinMux);
-      sensorData.full = fullPin;
-      taskEXIT_CRITICAL(&pinMux);
-      xTaskNotify(coinTaskHandle, COIN_FULL, eSetValueWithOverwrite);
+    int coinEmpty = coinEmpty();
+    if (coinEmpty != -1) { 
+      SensorData.empty = coinEmpty;
+      xSemaphoreGive(sensorDataMutex);
+      return;
     }
 
-    int emptyPin = coinEmpty();
-    if (emptyPin != -1) {
-      Serial.printf("Coin empty detected on pin: %d\n", emptyPin);
-      // handle short condition
-      taskENTER_CRITICAL(&pinMux);
-      sensorData.shortEmpty = emptyPin;
-      taskEXIT_CRITICAL(&pinMux);
-      xTaskNotify(coinTaskHandle, COIN_EMPTY, eSetValueWithOverwrite);
+    int coinFull = coinFull();
+    if (coinFull != -1) {
+      SensorData.full = coinFull;
+      xSemaphoreGive(sensorDataMutex);
+      return;
     }
+
+    SensorData.ready = true;
+
+    xSemaphoreGive(sensorDataMutex);
   }
 }
 
+
 CoinSensor::CoinSensor(SensorData &sensorDataObj, TaskHandle_t &handle) : taskHandle(handle), sensorData(sensorDataObj) {}
 
-void CoinSensor::begin(TaskHandle_t &coinHande) {
-  coinTaskHandle = coinHandle;
+void CoinSensor::begin(MutexHandle_t &sensorDataMutexObj) {
   // coin full
   actionArrayInvoke([&](int i) {
     pinMode(pinsFull[i], INPUT_PULLUP);
@@ -63,17 +58,7 @@ void CoinSensor::begin(TaskHandle_t &coinHande) {
   actionArrayInvoke([&](int i) {
     pinMode(pinsShort[i], INPUT_PULLUP);
   }, NUM_SENSORS);
-}
 
-void CoinSensor::task() {
-  xTaskCreatePinnedToCore(
-    taskEntryPoint,  // Static function
-    "CoinSensor",    // Task name
-    2048,            // Stack size
-    this,            // Pass 'this' to access member data
-    1,               // Priority
-    &taskHandle,      // Task handle
-    1,                // Core (0 or 1)
-  );
+  sensorDataMutex = sensorDataMutexObj;
 }
 

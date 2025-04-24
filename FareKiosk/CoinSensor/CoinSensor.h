@@ -12,19 +12,15 @@ private:
   static constexpr int NUM_SENSORS = 4;
   const int pinsShort[NUM_SENSORS] = { 32, 33, 27, 14 };
   const int pinsFull[NUM_SENSORS] = { 32, 33, 27, 14 };
-  portMUX_TYPE pinMux = portMUX_INITIALIZER_UNLOCKED;
 
   SensorData &sensorData;
-  TaskHandle_t &taskHandle;
-  TaskHandle_t coinTaskHandle;
+  MutexHandle_t &sensorDataMutex;
   
   int coinShort();
   int coinFull();
-  static void taskEntryPoint(void* pvParameters);
-  void taskLoop();
 
 public:
-  CoinSensor(SensorData &sensorDataObj, TaskHandle_t &handle);
-  void begin(TaskHandle_t &handle);
-  void task();
+  CoinSensor(SensorData &sensorDataObj);
+  void begin(MutexHandle_t &sensorDataMutexObj);
+  void checkSensors();
 }
