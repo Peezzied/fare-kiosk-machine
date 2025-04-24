@@ -1,5 +1,0 @@
-class Rotary {
-private:
-public:
-
-}

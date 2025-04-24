@@ -32,24 +32,18 @@ void CoinHandler::taskLoop() {
   while (true) {
     // Wait for any notification
     if (xTaskNotifyWait(0x00, 0xFFFFFFFF, &notificationValue, portMAX_DELAY) == pdTRUE) {
-      if (notificationValue == 0) {
-        // ISR coin pulse signal (no flags)
-        processCoin();
-      } else {
-        // Handle coin acceptor status flags
-        if (notificationValue == COIN_FULL) {
-          // Disable coin acceptor
-        }
-        if (notificationValue == COIN_READY) {
-          // Enable coin acceptor
-          coinInsert = false;
-        }
+      if (notificationValue == COIN_FULL) {
+        // Disable coin acceptor
+        // send notification to rotary storage
+        xTaskNotify(rotaryHandle, COIN_EMPTY, eSetValueWithOverwrite);
       }
+      // factor the coin acceptor enable/disable flag
+      if (notificationValue == 0) {
+        processCoin();
+      }
+      vTaskDelay(1);
     }
-
-    vTaskDelay(1);
   }
-}
 
 void CoinHandler::task() {
   xTaskCreatePinnedToCore(

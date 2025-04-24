@@ -9,6 +9,7 @@
 class CoinHandler {
 private:
   TaskHandle_t &taskHandle;
+  TaskHandle_t rotaryHandle;
   Credit &credit;
 
   static CoinHandler* instance;
@@ -23,12 +24,12 @@ private:
 
   static void IRAM_ATTR coinIsr();
   void addCredit(int amount);
-  static void taskEntryPoint(void* pvParameters);
+  static void taskEntryPoint(void* pvParameters); 
   void taskLoop();
 
 public:
   CoinHandler(Credit &creditObj, TaskHandle_t &handle);
-  void begin();
+  void begin(TaskHandle_t &rotary);
   void task();
   void processCoin();
 };

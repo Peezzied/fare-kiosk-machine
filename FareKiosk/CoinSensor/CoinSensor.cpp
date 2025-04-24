@@ -1,10 +1,10 @@
 #include "CoinSensor.h"
 #include "../models/Config.h"
 
-int CoinSensor::coinShort() {
+int CoinSensor::coinEmpty() {
   int result = -1;
   actionArrayInvoke([&](int i) {
-    if (digitalRead(pinsShort[i]) == LOW) {
+    if (digitalRead(pinsShort[i]) == HIGH) {
       result = pinsShort[i];
     }
   }, NUM_SENSORS);
@@ -21,15 +21,13 @@ int CoinSensor::coinFull() {
   return result;
 }
 
-static void CoinSensor::taskEntryPoint(void* pvParameters) {
+void CoinSensor::taskEntryPoint(void* pvParameters) {
   CoinSensor* instance = static_cast<CoinSensor*>(pvParameters);
   instance->taskLoop();  // Call the actual member function
 }
 
 void CoinSensor::taskLoop() {
   while (true) {
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    
     int fullPin = coinFull();
     if (fullPin != -1) {
       Serial.printf("Coin full detected on pin: %d\n", fullPin);
@@ -40,22 +38,22 @@ void CoinSensor::taskLoop() {
       xTaskNotify(coinTaskHandle, COIN_FULL, eSetValueWithOverwrite);
     }
 
-    int shortPin = coinShort();
-    if (shortPin != -1) {
-      Serial.printf("Coin short detected on pin: %d\n", shortPin);
+    int emptyPin = coinEmpty();
+    if (emptyPin != -1) {
+      Serial.printf("Coin empty detected on pin: %d\n", emptyPin);
       // handle short condition
       taskENTER_CRITICAL(&pinMux);
-      sensorData.shortEmpty = shortPin;
+      sensorData.shortEmpty = emptyPin;
       taskEXIT_CRITICAL(&pinMux);
-      xTaskNotify(coinTaskHandle, COIN_SHORT, eSetValueWithOverwrite);
+      xTaskNotify(coinTaskHandle, COIN_EMPTY, eSetValueWithOverwrite);
     }
   }
 }
 
 CoinSensor::CoinSensor(SensorData &sensorDataObj, TaskHandle_t &handle) : taskHandle(handle), sensorData(sensorDataObj) {}
 
-void CoinSensor::begin(TaskHandle_t &handle) {
-  coinTaskHandle = handle;
+void CoinSensor::begin(TaskHandle_t &coinHande) {
+  coinTaskHandle = coinHandle;
   // coin full
   actionArrayInvoke([&](int i) {
     pinMode(pinsFull[i], INPUT_PULLUP);
