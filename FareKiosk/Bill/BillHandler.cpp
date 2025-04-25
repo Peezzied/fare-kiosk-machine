@@ -33,7 +33,7 @@ void BillHandler::begin(InterfaceServer *interfaceServerObj) {
 }
 
 void IRAM_ATTR BillHandler::billIsr() {
-  if (instance) {
+  if (instance && instance->isPulseReady) {
     unsigned long now = micros();
     if (now - instance->lastPulseMicros > instance->debounceMicros) {
       instance->lastPulseMicros = now;
@@ -65,18 +65,20 @@ void BillHandler::processBill(int &pulseCount) {
 }
 
 void BillHandler::taskEntryPoint(void* pvParameters) {
-  BillHandler* instance = static_cast<BillHandler*>(pvParameters);
-  instance->taskLoop(); 
+  uint32_t val = 0;
+  // Wait indefinitely for notification with value 1
+  if (xTaskNotifyWait(0, 0, &val, portMAX_DELAY)) {
+    if (val == 2) {
+      // Notification with value 1 received, set the flag
+      instance->isPulseReady = true;
+      BillHandler* instance = static_cast<BillHandler*>(pvParameters);
+      instance->taskLoop(); // Call the task loop after flag is set
+    }
+  }
 }
 
 void BillHandler::taskLoop() {
-  SemaphoreHandle_t dataSemaphore = interfaceServer->getSemaphore();
-  if (dataSemaphore != nullptr) {
-    xSemaphoreTake(dataSemaphore, portMAX_DELAY);
-  } else {
-    Serial.println("Error: Semaphore is null!");
-    return;  // Exit or handle error
-  }
+
 
 
   int pulseCount = 0;

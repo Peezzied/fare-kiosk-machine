@@ -20,7 +20,7 @@ SemaphoreHandle_t sensorDataMutex;
 InterfaceServer interfaceServer;
 
 CoinHandler coinHandler(credit, sensorData, coinTask);
-BillHandler billHandler(credit, coinTask);
+BillHandler billHandler(credit, billTask);
 CoinSensor coinSensor(sensorData);
 
 
@@ -39,7 +39,7 @@ void setup() {
   Serial.println("Configuring access point...");
   Serial.println("");
 
-  interfaceServer.begin(&dataAvailableSemaphore);
+  interfaceServer.begin(&billTask, &coinTask);
   interfaceServer.beginWebsocket();
   
   coinSensor.begin(&sensorDataMutex);

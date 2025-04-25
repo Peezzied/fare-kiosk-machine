@@ -13,6 +13,7 @@ class CoinHandler {
 private:
   TaskHandle_t &taskHandle;
   TaskHandle_t rotaryHandle;
+  volatile bool isPulseReady = false;
   
   CoinSensor *coinSensor;
   InterfaceServer *interfaceServer;

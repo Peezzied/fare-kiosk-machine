@@ -15,6 +15,9 @@ private:
 
   SemaphoreHandle_t *dataAvailableSemaphore;
 
+  TaskHandle_t *billTask;
+  TaskHandle_t *coinTask;
+
   AsyncWebServer server;
   AsyncWebSocket ws;
   TransportData tripData;
@@ -26,7 +29,7 @@ private:
 public:
   InterfaceServer();
 
-  void begin(SemaphoreHandle_t *semaphoreHandle);
+  void begin(TaskHandle_t *billTaskObj, TaskHandle_t *coinTaskObj);
   void beginWebsocket();
 
   TransportData &getTripData();

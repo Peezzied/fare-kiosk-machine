@@ -1,9 +1,11 @@
 #include "InterfaceServer.h"
 #include "../models/Config.h"
 
-InterfaceServer::InterfaceServer() : server(80), ws("/ws"), tripData{"Unknown", "Unknown", "Unknown", 0}, dataAvailableSemaphore(nullptr) {}
+InterfaceServer::InterfaceServer() : server(80), ws("/ws"), tripData{"Unknown", "Unknown", "Unknown", 0}, billTask(nullptr), coinTask(nullptr) {}
 
-void InterfaceServer::begin(SemaphoreHandle_t *semaphoreHandle) {
+void InterfaceServer::begin(TaskHandle_t *billTaskObj, TaskHandle_t *coinTaskObj) {
+  billTask = billTaskObj;
+  coinTask = coinTaskObj;
 #ifdef DEV_MODE
   WiFi.begin(staSSID, password);
   Serial.print("Connecting to WiFi");
@@ -24,7 +26,6 @@ void InterfaceServer::begin(SemaphoreHandle_t *semaphoreHandle) {
   Serial.print("AP IP address: ");
   Serial.println(WiFi.softAPIP());
 #endif
-  dataAvailableSemaphore = semaphoreHandle;
 }
 
 void InterfaceServer::beginWebsocket() {
@@ -54,7 +55,8 @@ void InterfaceServer::_webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClie
       tripData = this->_handleTransport(client, data, len);
 
       // Notify tasks that new data is available
-      xSemaphoreGive(*dataAvailableSemaphore);
+      xTaskNotify(*coinTask, 1, eSetValueWithOverwrite);
+      xTaskNotify(*billTask, 2, eSetValueWithOverwrite);
       break;
     case WS_EVT_PONG:
       Serial.println("\nWebSocket PONG received");

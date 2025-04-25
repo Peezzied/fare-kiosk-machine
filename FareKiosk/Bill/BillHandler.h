@@ -12,6 +12,7 @@
 class BillHandler {
 private:
   TaskHandle_t &taskHandle;
+  volatile bool isPulseReady = false;
   
   Credit &credit;
   InterfaceServer *interfaceServer;

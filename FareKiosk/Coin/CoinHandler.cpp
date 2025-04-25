@@ -72,8 +72,7 @@ void CoinHandler::taskEntryPoint(void* pvParameters) {
 }
 
 void CoinHandler::taskLoop() {
-  SemaphoreHandle_t dataSemaphore = interfaceServer->getSemaphore();
-  xSemaphoreTake(dataSemaphore, portMAX_DELAY);
+
 
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
