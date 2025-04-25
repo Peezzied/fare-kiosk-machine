@@ -3,8 +3,8 @@
 
 CoinHandler* CoinHandler::instance = nullptr;
 
-CoinHandler::CoinHandler(Credit &creditObj, CoinSensor &coinSensorObj, TaskHandle_t &handle) 
-  : credit(creditObj), taskHandle(handle), coinSensor(coinSensorObj) {
+CoinHandler::CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle) 
+  : credit(creditObj), taskHandle(handle), sensorData(sensorDataObj), coinSensor(nullptr), sensorDataMutex(nullptr) {
   instance = this;
 }
 
@@ -14,12 +14,12 @@ void CoinHandler::addCredit(int amount) {
   taskEXIT_CRITICAL(&coinMux);
 }
 
-void CoinHandler::begin(SensorData &sensorDataObj, MutexHandle_t &sensorDataMutexObj) {
+void CoinHandler::begin(CoinSensor *coinSensorObj, SemaphoreHandle_t *sensorDataMutexObj) {
   Serial.println("CoinHandler Initialized");
   pinMode(COIN_PIN, INPUT_PULLUP);  // Set the coin pin as input
   attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinIsr, FALLING);
   
-  sensorData = sensorDataObj;
+  coinSensor = coinSensorObj;
   sensorDataMutex = sensorDataMutexObj;
   // Add inhibit pin logic if needed
 }
@@ -74,20 +74,20 @@ void CoinHandler::taskLoop() {
     lastPulseTime = micros();
 
     // checkSensors 
-    coinSensor.checkSensors();
+    coinSensor->checkSensors();
 
     // rotary notification
 
     // Wait for end of pulse train
     while (true) {
       if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
-        if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+        if (xSemaphoreTake(*sensorDataMutex, portMAX_DELAY) == pdTRUE) {
           if (sensorData.full) {
             pulseCount++;
             lastPulseTime = micros();
           }
           // Release mutex after accessing shared data
-          xSemaphoreGive(sensorDataMutex);
+          xSemaphoreGive(*sensorDataMutex);
         }
       } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
         break;

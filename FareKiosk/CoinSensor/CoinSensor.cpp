@@ -1,5 +1,7 @@
 #include "CoinSensor.h"
+#include <freertos/semphr.h>
 #include "../models/Config.h"
+#include "../Utilities.h"
 
 int CoinSensor::coinEmpty() {
   int result = -1;
@@ -22,33 +24,33 @@ int CoinSensor::coinFull() {
 }
 
 void CoinSensor::checkSensors() {
-  if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
-    SensorData.ready = false;
+  if (xSemaphoreTake(*sensorDataMutex, portMAX_DELAY) == pdTRUE) {
+    sensorData.ready = false;
 
-    int coinEmpty = coinEmpty();
+    int coinEmpty = this->coinEmpty();
     if (coinEmpty != -1) { 
-      SensorData.empty = coinEmpty;
-      xSemaphoreGive(sensorDataMutex);
+      sensorData.empty = coinEmpty;
+      xSemaphoreGive(*sensorDataMutex);
       return;
     }
 
-    int coinFull = coinFull();
+    int coinFull = this->coinFull();
     if (coinFull != -1) {
-      SensorData.full = coinFull;
-      xSemaphoreGive(sensorDataMutex);
+      sensorData.full = coinFull;
+      xSemaphoreGive(*sensorDataMutex);
       return;
     }
 
-    SensorData.ready = true;
+    sensorData.ready = true;
 
-    xSemaphoreGive(sensorDataMutex);
+    xSemaphoreGive(*sensorDataMutex);
   }
 }
 
 
-CoinSensor::CoinSensor(SensorData &sensorDataObj, TaskHandle_t &handle) : taskHandle(handle), sensorData(sensorDataObj) {}
+CoinSensor::CoinSensor(SensorData &sensorDataObj) : sensorData(sensorDataObj) {}
 
-void CoinSensor::begin(MutexHandle_t &sensorDataMutexObj) {
+void CoinSensor::begin(SemaphoreHandle_t *sensorDataMutexObj) {
   // coin full
   actionArrayInvoke([&](int i) {
     pinMode(pinsFull[i], INPUT_PULLUP);

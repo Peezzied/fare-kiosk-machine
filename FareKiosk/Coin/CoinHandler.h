@@ -4,6 +4,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/portmacro.h>
+#include <freertos/semphr.h>
 #include "../models/Credit.h"
 #include "../models/SensorData.h"
 #include "../CoinSensor/CoinSensor.h"
@@ -13,10 +14,10 @@ private:
   TaskHandle_t &taskHandle;
   TaskHandle_t rotaryHandle;
   
-  CoinSensor &coinSensor;
+  CoinSensor *coinSensor;
   SensorData &sensorData;
   Credit &credit;
-  MutexHandle_t &sensorDataMutex;
+  SemaphoreHandle_t *sensorDataMutex;
 
   static CoinHandler* instance;
 
@@ -33,8 +34,8 @@ private:
   void taskLoop();
 
 public:
-  CoinHandler(Credit &creditObj, CoinSensor &coinSensorObj, TaskHandle_t &handle);
-  void begin(SensorData &sensorDataObj, MutexHandle_t &sensorDataMutexObj);
+  CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle);
+  void begin(CoinSensor *coinSensorObj, SemaphoreHandle_t *sensorDataMutexObj);
   void task();
   void processCoin(int &pulse);
 };

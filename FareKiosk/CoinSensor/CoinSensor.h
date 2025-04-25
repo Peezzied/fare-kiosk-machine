@@ -4,6 +4,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/portmacro.h>
+#include <freertos/semphr.h>
 #include "../models/SensorData.h" // Assuming you have this
 
 
@@ -14,13 +15,13 @@ private:
   const int pinsFull[NUM_SENSORS] = { 32, 33, 27, 14 };
 
   SensorData &sensorData;
-  MutexHandle_t &sensorDataMutex;
+  SemaphoreHandle_t *sensorDataMutex;
   
-  int coinShort();
+  int coinEmpty();
   int coinFull();
 
 public:
   CoinSensor(SensorData &sensorDataObj);
-  void begin(MutexHandle_t &sensorDataMutexObj);
+  void begin(SemaphoreHandle_t *sensorDataMutexObj);
   void checkSensors();
-}
+};

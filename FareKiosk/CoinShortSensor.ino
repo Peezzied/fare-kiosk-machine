@@ -7,7 +7,7 @@
 
 // bool coinShort() {
 //   if (digitalRead(32) == LOW || digitalRead(33) == LOW || digitalRead(27) == LOW || digitalRead(14) == LOW) {
-//     return true; 
+//     return true;   
 //   }
 //   return false;
 // }
