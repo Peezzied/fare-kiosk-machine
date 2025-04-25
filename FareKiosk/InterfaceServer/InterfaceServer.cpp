@@ -1,9 +1,9 @@
 #include "InterfaceServer.h"
 #include "../models/Config.h"
 
-InterfaceServer::InterfaceServer(SemaphoreHandle_t &semaphoreHandle) : server(80), ws("/ws"), dataAvailableSemaphore(semaphoreHandle), tripData{"Unknown", "Unknown", "Unknown", 0} {}
+InterfaceServer::InterfaceServer() : server(80), ws("/ws"), tripData{"Unknown", "Unknown", "Unknown", 0}, dataAvailableSemaphore(nullptr) {}
 
-void InterfaceServer::begin() {
+void InterfaceServer::begin(SemaphoreHandle_t *semaphoreHandle) {
 #ifdef DEV_MODE
   WiFi.begin(staSSID, password);
   Serial.print("Connecting to WiFi");
@@ -24,6 +24,7 @@ void InterfaceServer::begin() {
   Serial.print("AP IP address: ");
   Serial.println(WiFi.softAPIP());
 #endif
+  dataAvailableSemaphore = semaphoreHandle;
 }
 
 void InterfaceServer::beginWebsocket() {
@@ -100,12 +101,8 @@ void InterfaceServer::_printTransportData(const TransportData &data) {
   }
 }
 
-AsyncWebServer& InterfaceServer::getServer() {
-  return server;
-}
-
-AsyncWebSocket& InterfaceServer::getWebSocket() {
-  return ws;
+SemaphoreHandle_t InterfaceServer::getSemaphore() {
+  return dataAvailableSemaphore;
 }
 
 InterfaceServer::TransportData& InterfaceServer::getTripData() {

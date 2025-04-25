@@ -4,7 +4,7 @@
 CoinHandler* CoinHandler::instance = nullptr;
 
 CoinHandler::CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle) 
-  : credit(creditObj), taskHandle(handle), sensorData(sensorDataObj), coinSensor(nullptr), sensorDataMutex(nullptr) {
+  : credit(creditObj), taskHandle(handle), sensorData(sensorDataObj), coinSensor(nullptr), sensorDataMutex(nullptr), interfaceServer(nullptr) {
   instance = this;
 }
 
@@ -14,11 +14,20 @@ void CoinHandler::addCredit(int amount) {
   taskEXIT_CRITICAL(&coinMux);
 }
 
-void CoinHandler::begin(CoinSensor *coinSensorObj, SemaphoreHandle_t *sensorDataMutexObj) {
+void CoinHandler::checkFare(int fare) {
+  taskENTER_CRITICAL(&coinMux);
+  if ((credit.bill + credit.coin) == fare) {
+    // do something
+  }
+  taskEXIT_CRITICAL(&coinMux);
+}
+
+void CoinHandler::begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj) {
   Serial.println("CoinHandler Initialized");
   pinMode(COIN_PIN, INPUT_PULLUP);  // Set the coin pin as input
   attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinIsr, FALLING);
   
+  interfaceServer = interfaceServerObj;
   coinSensor = coinSensorObj;
   sensorDataMutex = sensorDataMutexObj;
   // Add inhibit pin logic if needed
@@ -63,11 +72,15 @@ void CoinHandler::taskEntryPoint(void* pvParameters) {
 }
 
 void CoinHandler::taskLoop() {
+  SemaphoreHandle_t dataSemaphore = interfaceServer->getSemaphore();
+  xSemaphoreTake(dataSemaphore, portMAX_DELAY)
+
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
 
   for (;;) {
     // Wait for ISR to notify pulse
+    checkFare(interfaceServer->getSemaphore()->fare);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
     pulseCount++;

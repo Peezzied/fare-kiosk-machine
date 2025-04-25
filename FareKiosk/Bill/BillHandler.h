@@ -14,6 +14,7 @@ private:
   TaskHandle_t &taskHandle;
   
   Credit &credit;
+  InterfaceServer *interfaceServer;
 
   static BillHandler* instance;
 
@@ -26,12 +27,13 @@ private:
 
   static void IRAM_ATTR billIsr();
   void addCredit(int amount);
+  void checkFare(int fare);
   void processBill(int &pulse);
   static void taskEntryPoint(void* pvParameters); 
   void taskLoop();
 
 public:
   BillHandler(Credit &creditObj, TaskHandle_t &handle);
-  void begin();
+  void begin(InterfaceServer *interfaceServerObj);
   void task();
 };

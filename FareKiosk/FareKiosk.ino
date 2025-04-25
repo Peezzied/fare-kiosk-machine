@@ -1,5 +1,5 @@
-// #include "InterfaceServer/InterfaceServer.h"
-// #include "InterfaceServer/InterfaceServer.cpp"
+#include "InterfaceServer/InterfaceServer.h"
+#include "InterfaceServer/InterfaceServer.cpp"
 #include "Coin/CoinHandler.h"
 #include "Coin/CoinHandler.cpp"
 #include "Bill/BillHandler.h"
@@ -17,7 +17,7 @@ SensorData sensorData;
 SemaphoreHandle_t sensorDataMutex;
 
 
-InterfaceServer interfaceServer(dataAvailableSemaphore);
+InterfaceServer interfaceServer();
 
 CoinHandler coinHandler(credit, sensorData, coinTask);
 BillHandler billHandler(credit, coinTask);
@@ -34,8 +34,8 @@ void setup() {
   Serial.println("Configuring access point...");
   Serial.println("");
 
-  // interfaceServer.begin();
-  // interfaceServer.beginWebsocket();
+  interfaceServer.begin(&dataAvailableSemaphore);
+  interfaceServer.beginWebsocket();
   
   coinSensor.begin(&sensorDataMutex);
 

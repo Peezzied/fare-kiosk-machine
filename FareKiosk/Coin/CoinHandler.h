@@ -15,6 +15,7 @@ private:
   TaskHandle_t rotaryHandle;
   
   CoinSensor *coinSensor;
+  InterfaceServer *interfaceServer;
   SensorData &sensorData;
   Credit &credit;
   SemaphoreHandle_t *sensorDataMutex;
@@ -30,12 +31,13 @@ private:
 
   static void IRAM_ATTR coinIsr();
   void addCredit(int amount);
+  void checkFare(int fare);
   static void taskEntryPoint(void* pvParameters); 
   void taskLoop();
 
 public:
   CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle);
-  void begin(CoinSensor *coinSensorObj, SemaphoreHandle_t *sensorDataMutexObj);
+  void begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj);
   void task();
   void processCoin(int &pulse);
 };

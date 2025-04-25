@@ -4,7 +4,7 @@
 BillHandler* BillHandler::instance = nullptr;
 
 BillHandler::BillHandler(Credit &creditObj, TaskHandle_t &handle) 
-  : credit(creditObj), taskHandle(handle) {
+  : credit(creditObj), taskHandle(handle), interfaceServer(nullptr) {
   instance = this;
 }
 
@@ -14,10 +14,20 @@ void BillHandler::addCredit(int amount) {
   taskEXIT_CRITICAL(&billMux);
 }
 
-void BillHandler::begin() {
+void CoinHandler::checkFare(int fare) {
+  taskENTER_CRITICAL(&coinMux);
+  if ((credit.bill + credit.coin) == fare) {
+    // do something
+  }
+  taskEXIT_CRITICAL(&coinMux);
+}
+
+void BillHandler::begin(InterfaceServer *interfaceServerObj) {
   Serial.println("BillHandler Initialized");
   pinMode(BILL_PIN, INPUT_PULLUP);  // Set the bill pin as input
   attachInterrupt(digitalPinToInterrupt(BILL_PIN), billIsr, FALLING);
+
+  interfaceServer = interfaceServerObj;
 
   // Add inhibit pin logic if needed
 }
@@ -60,11 +70,15 @@ void BillHandler::taskEntryPoint(void* pvParameters) {
 }
 
 void BillHandler::taskLoop() {
+  SemaphoreHandle_t dataSemaphore = interfaceServer->getSemaphore();
+  xSemaphoreTake(dataSemaphore, portMAX_DELAY)
+
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
 
   for (;;) {
     // Wait for ISR to notify pulse
+    checkFare(interfaceServer->getSemaphore()->fare);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
     pulseCount++;

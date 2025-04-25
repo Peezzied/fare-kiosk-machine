@@ -3,21 +3,17 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include "../models/TransportData.h"
 
 class InterfaceServer {
 // public:
 private:
-  struct TransportData {
-    String origin;
-    String destination;
-    String passenger;
-    int fare;
-  };
+
   const char *apSSID = "Manila to Novaliches Transit";
   const char *staSSID = "Converge_2.4GHz_23F7";
   const char *password = "5bDRg6Tc";
 
-  SemaphoreHandle_t &dataAvailableSemaphore;
+  SemaphoreHandle_t *dataAvailableSemaphore;
 
   AsyncWebServer server;
   AsyncWebSocket ws;
@@ -28,13 +24,12 @@ private:
   void _printTransportData(const TransportData &data);
 
 public:
-  InterfaceServer(SemaphoreHandle_t &semaphoreHandle);
+  InterfaceServer();
 
   void begin();
   void beginWebsocket();
 
-  AsyncWebServer &getServer();
-  AsyncWebSocket &getWebSocket();
   TransportData &getTripData();
+  SemaphoreHandle_t getSemaphore();
 };
 
