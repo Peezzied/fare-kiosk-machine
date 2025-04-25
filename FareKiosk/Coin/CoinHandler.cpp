@@ -73,14 +73,13 @@ void CoinHandler::taskEntryPoint(void* pvParameters) {
 
 void CoinHandler::taskLoop() {
   SemaphoreHandle_t dataSemaphore = interfaceServer->getSemaphore();
-  xSemaphoreTake(dataSemaphore, portMAX_DELAY)
+  xSemaphoreTake(dataSemaphore, portMAX_DELAY);
 
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
 
   for (;;) {
     // Wait for ISR to notify pulse
-    checkFare(interfaceServer->getSemaphore()->fare);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
     pulseCount++;
@@ -93,6 +92,7 @@ void CoinHandler::taskLoop() {
 
     // Wait for end of pulse train
     while (true) {
+      checkFare(interfaceServer->getTripData().fare);
       if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
         pulseCount++;
         lastPulseTime = micros();

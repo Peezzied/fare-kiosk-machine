@@ -14,12 +14,12 @@ void BillHandler::addCredit(int amount) {
   taskEXIT_CRITICAL(&billMux);
 }
 
-void CoinHandler::checkFare(int fare) {
-  taskENTER_CRITICAL(&coinMux);
+void BillHandler::checkFare(int fare) {
+  taskENTER_CRITICAL(&billMux);
   if ((credit.bill + credit.coin) == fare) {
     // do something
   }
-  taskEXIT_CRITICAL(&coinMux);
+  taskEXIT_CRITICAL(&billMux);
 }
 
 void BillHandler::begin(InterfaceServer *interfaceServerObj) {
@@ -71,14 +71,19 @@ void BillHandler::taskEntryPoint(void* pvParameters) {
 
 void BillHandler::taskLoop() {
   SemaphoreHandle_t dataSemaphore = interfaceServer->getSemaphore();
-  xSemaphoreTake(dataSemaphore, portMAX_DELAY)
+  if (dataSemaphore != nullptr) {
+    xSemaphoreTake(dataSemaphore, portMAX_DELAY);
+  } else {
+    Serial.println("Error: Semaphore is null!");
+    return;  // Exit or handle error
+  }
+
 
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
 
   for (;;) {
     // Wait for ISR to notify pulse
-    checkFare(interfaceServer->getSemaphore()->fare);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
     pulseCount++;
@@ -86,6 +91,7 @@ void BillHandler::taskLoop() {
 
     // Wait for end of pulse train
     while (true) {
+      checkFare(interfaceServer->getTripData().fare);
       if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
         pulseCount++;
         lastPulseTime = micros();
@@ -94,18 +100,6 @@ void BillHandler::taskLoop() {
       }
     }
 
-    // Disable bill acceptor if full
-
-    // if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
-    //   if (sensorData.full) {
-    //     digitalWrite(INHIBIT_PIN, HIGH);
-    //   } else {
-    //     digitalWrite(INHIBIT_PIN, LOW);
-    //   }
-    //   xSemaphoreGive(sensorDataMutex);
-    // }
-
-    // maybe use mutex here if problem arises
     processBill(pulseCount);
   }
 }

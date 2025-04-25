@@ -54,7 +54,7 @@ void InterfaceServer::_webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClie
       tripData = this->_handleTransport(client, data, len);
 
       // Notify tasks that new data is available
-      xSemaphoreGive(dataAvailableSemaphore);
+      xSemaphoreGive(*dataAvailableSemaphore);
       break;
     case WS_EVT_PONG:
       Serial.println("\nWebSocket PONG received");
@@ -69,7 +69,7 @@ void InterfaceServer::_webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClie
 }
 
 
-InterfaceServer::TransportData InterfaceServer::_handleTransport(AsyncWebSocketClient *client, uint8_t *data, size_t len) {
+TransportData InterfaceServer::_handleTransport(AsyncWebSocketClient *client, uint8_t *data, size_t len) {
   TransportData result;
   StaticJsonDocument<200> dataDoc;
   DeserializationError error = deserializeJson(dataDoc, data);
@@ -87,6 +87,8 @@ InterfaceServer::TransportData InterfaceServer::_handleTransport(AsyncWebSocketC
     client->text(errorResponse);
   }
 
+  _printTransportData(result);
+
   return result;
 }
 
@@ -101,10 +103,10 @@ void InterfaceServer::_printTransportData(const TransportData &data) {
   }
 }
 
-SemaphoreHandle_t InterfaceServer::getSemaphore() {
-  return dataAvailableSemaphore;
+SemaphoreHandle_t& InterfaceServer::getSemaphore() {
+  return *dataAvailableSemaphore;
 }
 
-InterfaceServer::TransportData& InterfaceServer::getTripData() {
+TransportData& InterfaceServer::getTripData() {
   return tripData;
 }

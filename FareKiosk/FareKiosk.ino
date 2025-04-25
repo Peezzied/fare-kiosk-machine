@@ -17,7 +17,7 @@ SensorData sensorData;
 SemaphoreHandle_t sensorDataMutex;
 
 
-InterfaceServer interfaceServer();
+InterfaceServer interfaceServer;
 
 CoinHandler coinHandler(credit, sensorData, coinTask);
 BillHandler billHandler(credit, coinTask);
@@ -29,6 +29,11 @@ void setup() {
   sensorDataMutex = xSemaphoreCreateMutex();
   dataAvailableSemaphore = xSemaphoreCreateBinary();
 
+  if (dataAvailableSemaphore == NULL) {
+    Serial.println("Failed to create semaphore!");
+    while (true);  // Stay here if semaphore creation fails
+  }
+
   Serial.begin(115200);
   Serial.println();
   Serial.println("Configuring access point...");
@@ -39,16 +44,14 @@ void setup() {
   
   coinSensor.begin(&sensorDataMutex);
 
-  coinHandler.begin(&coinSensor, &sensorDataMutex, &interfaceServer);
+  coinHandler.begin(&coinSensor, &interfaceServer, &sensorDataMutex);
   coinHandler.task();
 
   billHandler.begin(&interfaceServer);
   billHandler.task();
 
-  // coinSensor.task();
-
 }
 
 void loop() {
-  // coin();
+
 }

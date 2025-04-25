@@ -26,10 +26,10 @@ private:
 public:
   InterfaceServer();
 
-  void begin();
+  void begin(SemaphoreHandle_t *semaphoreHandle);
   void beginWebsocket();
 
   TransportData &getTripData();
-  SemaphoreHandle_t getSemaphore();
+  SemaphoreHandle_t& getSemaphore();
 };
 
