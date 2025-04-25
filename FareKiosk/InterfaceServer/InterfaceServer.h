@@ -17,6 +17,8 @@ private:
   const char *staSSID = "Converge_2.4GHz_23F7";
   const char *password = "5bDRg6Tc";
 
+  SemaphoreHandle_t &dataAvailableSemaphore;
+
   AsyncWebServer server;
   AsyncWebSocket ws;
   TransportData tripData;
@@ -26,7 +28,7 @@ private:
   void _printTransportData(const TransportData &data);
 
 public:
-  InterfaceServer();
+  InterfaceServer(SemaphoreHandle_t &semaphoreHandle);
 
   void begin();
   void beginWebsocket();

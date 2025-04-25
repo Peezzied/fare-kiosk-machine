@@ -1,7 +1,7 @@
 #include "InterfaceServer.h"
 #include "../models/Config.h"
 
-InterfaceServer::InterfaceServer() : server(80), ws("/ws"), tripData{"Unknown", "Unknown", "Unknown", 0} {}
+InterfaceServer::InterfaceServer(SemaphoreHandle_t &semaphoreHandle) : server(80), ws("/ws"), dataAvailableSemaphore(semaphoreHandle), tripData{"Unknown", "Unknown", "Unknown", 0} {}
 
 void InterfaceServer::begin() {
 #ifdef DEV_MODE
@@ -50,7 +50,10 @@ void InterfaceServer::_webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClie
       break;
     case WS_EVT_DATA:
       Serial.println("\nWebSocket client sent data");
-      handleEvtData();
+      tripData = this->_handleTransport(client, data, len);
+
+      // Notify tasks that new data is available
+      xSemaphoreGive(dataAvailableSemaphore);
       break;
     case WS_EVT_PONG:
       Serial.println("\nWebSocket PONG received");

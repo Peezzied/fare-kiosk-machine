@@ -1,30 +1,28 @@
-#include "CoinHandler.h"
+#include "BillHandler.h"
 #include "../models/Config.h"
 
-CoinHandler* CoinHandler::instance = nullptr;
+BillHandler* BillHandler::instance = nullptr;
 
-CoinHandler::CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle) 
-  : credit(creditObj), taskHandle(handle), sensorData(sensorDataObj), coinSensor(nullptr), sensorDataMutex(nullptr) {
+BillHandler::BillHandler(Credit &creditObj, TaskHandle_t &handle) 
+  : credit(creditObj), taskHandle(handle) {
   instance = this;
 }
 
-void CoinHandler::addCredit(int amount) {
-  taskENTER_CRITICAL(&coinMux);
-  credit.coin += amount;
-  taskEXIT_CRITICAL(&coinMux);
+void BillHandler::addCredit(int amount) {
+  taskENTER_CRITICAL(&billMux);
+  credit.bill += amount;
+  taskEXIT_CRITICAL(&billMux);
 }
 
-void CoinHandler::begin(CoinSensor *coinSensorObj, SemaphoreHandle_t *sensorDataMutexObj) {
-  Serial.println("CoinHandler Initialized");
-  pinMode(COIN_PIN, INPUT_PULLUP);  // Set the coin pin as input
-  attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinIsr, FALLING);
-  
-  coinSensor = coinSensorObj;
-  sensorDataMutex = sensorDataMutexObj;
+void BillHandler::begin() {
+  Serial.println("BillHandler Initialized");
+  pinMode(BILL_PIN, INPUT_PULLUP);  // Set the bill pin as input
+  attachInterrupt(digitalPinToInterrupt(BILL_PIN), billIsr, FALLING);
+
   // Add inhibit pin logic if needed
 }
 
-void IRAM_ATTR CoinHandler::coinIsr() {
+void IRAM_ATTR BillHandler::billIsr() {
   if (instance) {
     unsigned long now = micros();
     if (now - instance->lastPulseMicros > instance->debounceMicros) {
@@ -36,33 +34,32 @@ void IRAM_ATTR CoinHandler::coinIsr() {
   }
 }
 
-void CoinHandler::processCoin(int &pulseCount) {
-  // Decode and print coin value
+void BillHandler::processBill(int &pulseCount) {
+  // Decode and print bill value
   int value = 0;
   switch (pulseCount) {
-    case 1: value = 10; break;
-    case 2: value = 5; break;
-    case 3: value = 1; break;
-    case 4: value = 20; break;
+    case 2: value = 20; break;
+    case 5: value = 50; break;
+    case 10: value = 100; break;
     default:
-      Serial.printf("Unknown coin: %d pulses\n", pulseCount);
+      Serial.printf("Unknown bill: %d pulses\n", pulseCount);
       break;
   }
 
   if (value > 0) {
     addCredit(value);
-    Serial.printf("Coin inserted: Value = %d\n", credit.coin);
+    Serial.printf("Bill inserted: Value = %d\n", credit.bill);
   }
 
   pulseCount = 0;
 }
 
-void CoinHandler::taskEntryPoint(void* pvParameters) {
-  CoinHandler* instance = static_cast<CoinHandler*>(pvParameters);
+void BillHandler::taskEntryPoint(void* pvParameters) {
+  BillHandler* instance = static_cast<BillHandler*>(pvParameters);
   instance->taskLoop(); 
 }
 
-void CoinHandler::taskLoop() {
+void BillHandler::taskLoop() {
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
 
@@ -73,23 +70,17 @@ void CoinHandler::taskLoop() {
     pulseCount++;
     lastPulseTime = micros();
 
-    // checkSensors 
-    coinSensor->checkSensors();
-
-    // rotary notification
-
     // Wait for end of pulse train
     while (true) {
       if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
         pulseCount++;
         lastPulseTime = micros();
-
       } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
         break;
       }
     }
 
-    // Disable coin acceptor if full
+    // Disable bill acceptor if full
 
     // if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
     //   if (sensorData.full) {
@@ -101,14 +92,14 @@ void CoinHandler::taskLoop() {
     // }
 
     // maybe use mutex here if problem arises
-    processCoin(pulseCount);
+    processBill(pulseCount);
   }
 }
 
-void CoinHandler::task() {
+void BillHandler::task() {
   xTaskCreatePinnedToCore(
     taskEntryPoint,
-    "CoinSensor",
+    "BillSensor",
     2048,
     this,
     1,
