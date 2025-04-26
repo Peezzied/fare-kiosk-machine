@@ -1,7 +1,7 @@
 #include "InterfaceServer.h"
 #include "../models/Config.h"
 
-InterfaceServer::InterfaceServer() : server(80), ws("/ws"), tripData{"Unknown", "Unknown", "Unknown", 0}, billTask(nullptr), coinTask(nullptr) {}
+InterfaceServer::InterfaceServer() : server(80), ws("/ws"), tripData{"Unknown", "Unknown", "Unknown", "Unknown", "Unknown", 0}, billTask(nullptr), coinTask(nullptr) {}
 
 void InterfaceServer::begin(TaskHandle_t *billTaskObj, TaskHandle_t *coinTaskObj) {
   billTask = billTaskObj;
@@ -80,6 +80,8 @@ TransportData InterfaceServer::_handleTransport(AsyncWebSocketClient *client, ui
     result.origin = dataDoc["origin"].as<String>();
     result.destination = dataDoc["destination"].as<String>();
     result.passenger = dataDoc["passenger"].as<String>();
+    result.passenger = dataDoc["date"].as<String>();
+    result.passenger = dataDoc["int"].as<String>();
     result.fare = dataDoc["fare"].as<int>();
 
     String response = "{\"status\":\"OK\"}";
@@ -95,8 +97,8 @@ TransportData InterfaceServer::_handleTransport(AsyncWebSocketClient *client, ui
 }
 
 void InterfaceServer::_printTransportData(const TransportData &data) {
-  String propertyNames[] = { "origin", "destination", "passenger", "fare" };
-  String propertyValues[] = { data.origin, data.destination, data.passenger, String(data.fare) };
+  String propertyNames[] = { "origin", "destination", "passenger", "date", "time", "fare" };
+  String propertyValues[] = { data.origin, data.destination, data.passenger, data.date, data.time, String(data.fare) };
 
   for (int i = 0; i < 4; i++) {
     Serial.print(propertyNames[i]);

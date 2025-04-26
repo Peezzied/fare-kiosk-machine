@@ -3,7 +3,7 @@
 
 #include "Receipt.h"
 
-Receipt::Receipt(TaskHandle_t &handle)
+Receipt::Receipt(Credit &creditObj, TaskHandle_t &handle)
   : taskHandle(handle), mySerial(Serial2), printer(&mySerial), credit(creditObj) {
 }
 
@@ -67,12 +67,12 @@ void Receipt::taskLoop() {
     // Proceed with the task logic once any bit is set
     String fare = String(interfaceServer->getTripData().fare);
     String origin = interfaceServer->getTripData().origin;
-    String destination interfaceServer->getTripData().destination;
+    String destination = interfaceServer->getTripData().destination;
     String serialNumber = String(312000000000 + random(100000000, 999999999));
     String date = interfaceServer->getTripData().date;
     String time = interfaceServer->getTripData().time;
 
-    printTicket(fare, "Malinta", "VGC", "884000182892", "25/04/25", "12:04 PM");
+    printTicket(fare, origin, destination, serialNumber, date, time);
   }
 }
 

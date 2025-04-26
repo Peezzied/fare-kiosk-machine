@@ -81,7 +81,10 @@ void CoinHandler::taskLoop() {
 
   for (;;) {
     // Wait for ISR to notify pulse
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    uint32_t val = 0;
+
+    // Wait for notification with value 3 (this will block the task until notified)
+    if (xTaskNotifyWait(0, 0, &val, pdMS_TO_TICKS(10))) {
 
     pulseCount++;
     lastPulseTime = micros();
@@ -100,6 +103,7 @@ void CoinHandler::taskLoop() {
 
       } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
         break;
+      }
       }
     }
 
