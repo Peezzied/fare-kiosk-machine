@@ -9,11 +9,13 @@ class InterfaceServer {
 // public:
 private:
 
-  const char *apSSID = "Manila to Novaliches Transit";
-  const char *staSSID = "Converge_2.4GHz_23F7";
-  const char *password = "5bDRg6Tc";
+  const char *apSSID = "Malinta to Novaliches Transit";
+  // const char *staSSID = "Converge_2.4GHz_23F7";
+  const char *staSSID = "GlobeAtHome_82B2E_2.4";
+  const char *password = "RMM7cCbU";
 
   SemaphoreHandle_t *dataAvailableSemaphore;
+  AsyncWebSocketClient* connectedClient = nullptr;
 
   TaskHandle_t *billTask;
   TaskHandle_t *coinTask;
@@ -33,6 +35,7 @@ public:
   void beginWebsocket();
 
   TransportData &getTripData();
+  void sendJsonToClient();
   SemaphoreHandle_t& getSemaphore();
 };
 

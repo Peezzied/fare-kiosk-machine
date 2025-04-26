@@ -15,7 +15,7 @@ private:
   static const uint8_t TX_PIN = 17;
   static const uint8_t RX_PIN = 16;
 
-  void printTicket(const String &fare, const String &origin, const String &destination, const String &serialNumber, const String &date, const String &time);
+  void printTicket(const String &fare, const String &origin, const String &destination, const String &serialNumber, const String &date, const String &time, const String &pay, const String &passenger);
   static void taskEntryPoint(void *pvParameters);
   void taskLoop();
 

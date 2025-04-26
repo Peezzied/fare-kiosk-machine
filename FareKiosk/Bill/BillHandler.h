@@ -20,7 +20,7 @@ private:
 
   static BillHandler* instance;
 
-  static const uint8_t BILL_PIN = 19;
+  static const uint8_t BILL_PIN = 18;
   volatile unsigned long lastPulseMicros = 0;
   const unsigned long debounceMicros = 75000;
   const unsigned long pulseTimeoutMicros = 300000;

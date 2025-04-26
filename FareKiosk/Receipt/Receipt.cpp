@@ -15,7 +15,7 @@ void Receipt::begin(InterfaceServer *interfaceServerObj) {
 }
 
 void Receipt::printTicket(const String &fare, const String &origin, const String &destination,
-                          const String &serialNumber, const String &date, const String &time) {
+                          const String &serialNumber, const String &date, const String &time, const String &pay, const String &passenger) {
   printer.begin();
   delay(2000);
 
@@ -42,7 +42,8 @@ void Receipt::printTicket(const String &fare, const String &origin, const String
   printer.setSize('S');
   printer.justify('L');
   printer.println("\n\nSN: " + serialNumber + "  DATE: " + date);
-  printer.println("TIME: " + time + "    TYPE: Student");
+  printer.println("TIME: " + time + "    TYPE: " + passenger);
+  printer.println("Paid: " + pay);
 
   // Barcode
   printer.justify('C');
@@ -71,8 +72,12 @@ void Receipt::taskLoop() {
     String serialNumber = String(312000000000 + random(100000000, 999999999));
     String date = interfaceServer->getTripData().date;
     String time = interfaceServer->getTripData().time;
+    String pay = String(credit.bill + credit.coin);
+    String passenger = interfaceServer->getTripData().passenger;
 
-    printTicket(fare, origin, destination, serialNumber, date, time);
+    printTicket(fare, origin, destination, serialNumber, date, time, pay, passenger);
+    interfaceServer->sendJsonToClient();
+
   }
 }
 

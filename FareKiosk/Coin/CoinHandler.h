@@ -13,6 +13,7 @@ class CoinHandler {
 private:
   TaskHandle_t &taskHandle;
   TaskHandle_t receiptTask;
+  TaskHandle_t servosTask;
   TaskHandle_t rotaryHandle;
   volatile bool isPulseReady = false;
   
@@ -24,7 +25,7 @@ private:
 
   static CoinHandler* instance;
 
-  static const uint8_t COIN_PIN = 27;
+  static const uint8_t COIN_PIN = 4;
   volatile unsigned long lastPulseMicros = 0;
   const unsigned long debounceMicros = 2000;    // 3 ms
   const unsigned long pulseTimeoutMicros = 300000; // 300 ms
@@ -39,7 +40,7 @@ private:
 
 public:
   CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle);
-  void begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj);
+  void begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj, TaskHandle_t &servosTaskObj);
   void task();
   void processCoin(int &pulse);
 };

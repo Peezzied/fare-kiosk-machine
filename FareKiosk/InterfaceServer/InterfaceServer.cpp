@@ -46,6 +46,7 @@ void InterfaceServer::_webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClie
   switch (type) {
     case WS_EVT_CONNECT:
       Serial.println("\nWebSocket client connected");
+      connectedClient = client;
       break;
     case WS_EVT_DISCONNECT:
       Serial.println("\nWebSocket client disconnected");
@@ -80,8 +81,8 @@ TransportData InterfaceServer::_handleTransport(AsyncWebSocketClient *client, ui
     result.origin = dataDoc["origin"].as<String>();
     result.destination = dataDoc["destination"].as<String>();
     result.passenger = dataDoc["passenger"].as<String>();
-    result.passenger = dataDoc["date"].as<String>();
-    result.passenger = dataDoc["int"].as<String>();
+    result.date = dataDoc["date"].as<String>();
+    result.time = dataDoc["time"].as<String>();
     result.fare = dataDoc["fare"].as<int>();
 
     String response = "{\"status\":\"OK\"}";
@@ -105,6 +106,20 @@ void InterfaceServer::_printTransportData(const TransportData &data) {
     Serial.print(": ");
     Serial.println(propertyValues[i]);
   }
+}
+
+void InterfaceServer::sendJsonToClient() {
+  StaticJsonDocument<200> doc;
+
+  Serial.println("Sent Successful Transaction");
+  
+  doc["type"] = "update";
+  doc["status"] = "complete";
+
+  String jsonString;
+  serializeJson(doc, jsonString);
+
+  connectedClient->text(jsonString);
 }
 
 SemaphoreHandle_t& InterfaceServer::getSemaphore() {

@@ -23,7 +23,8 @@ void CoinHandler::checkFare(int fare) {
   taskEXIT_CRITICAL(&coinMux);
 }
 
-void CoinHandler::begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj) {
+void CoinHandler::begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj, TaskHandle_t &servosTaskObj) {
+  servosTask = servosTaskObj;
   receiptTask = receiptTaskObj;
   Serial.println("CoinHandler Initialized");
   pinMode(COIN_PIN, INPUT_PULLUP);  // Set the coin pin as input
@@ -51,9 +52,9 @@ void CoinHandler::processCoin(int &pulseCount) {
   // Decode and print coin value
   int value = 0;
   switch (pulseCount) {
-    case 1: value = 10; break;
-    case 2: value = 5; break;
-    case 3: value = 1; break;
+    case 1: value = 10; xTaskNotify(servosTask, 1, eSetValueWithOverwrite); break;
+    case 2: value = 1; break;
+    case 3: value = 5; break;
     case 4: value = 20; break;
     default:
       Serial.printf("Unknown coin: %d pulses\n", pulseCount);
@@ -69,13 +70,20 @@ void CoinHandler::processCoin(int &pulseCount) {
 }
 
 void CoinHandler::taskEntryPoint(void* pvParameters) {
-  CoinHandler* instance = static_cast<CoinHandler*>(pvParameters);
-  instance->taskLoop(); 
+  uint32_t val = 0;
+  // Wait indefinitely for notification with value 1
+  if (xTaskNotifyWait(0, 0, &val, portMAX_DELAY)) {
+    if (val == 1) {
+      // Notification with value 1 received, set the flag
+      instance->isPulseReady = true;
+      Serial.println("→ Coin task");
+      CoinHandler* instance = static_cast<CoinHandler*>(pvParameters);
+      instance->taskLoop();  // Call the task loop after flag is set
+    }
+  }
 }
 
 void CoinHandler::taskLoop() {
-
-
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
 
@@ -85,38 +93,24 @@ void CoinHandler::taskLoop() {
 
     // Wait for notification with value 3 (this will block the task until notified)
     if (xTaskNotifyWait(0, 0, &val, pdMS_TO_TICKS(10))) {
-
-    pulseCount++;
-    lastPulseTime = micros();
-
-    // checkSensors 
-    // coinSensor->checkSensors();
-
-    // rotary notification
-
-    // Wait for end of pulse train
-    while (true) {
-      checkFare(interfaceServer->getTripData().fare);
-      if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
+      if (val == 3) {
         pulseCount++;
         lastPulseTime = micros();
 
-      } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
-        break;
-      }
+        // checkSensors
+        // coinSensor->checkSensors();
+
+        // Wait for end of pulse train
+        while (true) {
+          if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
+            pulseCount++;
+            lastPulseTime = micros();
+          } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
+            break;
+          }
+        }
       }
     }
-
-    // Disable coin acceptor if full
-
-    // if (xSemaphoreTake(sensorDataMutex, portMAX_DELAY) == pdTRUE) {
-    //   if (sensorData.full) {
-    //     digitalWrite(INHIBIT_PIN, HIGH);
-    //   } else {
-    //     digitalWrite(INHIBIT_PIN, LOW);
-    //   }
-    //   xSemaphoreGive(sensorDataMutex);
-    // }
 
     // maybe use mutex here if problem arises
     processCoin(pulseCount);
@@ -127,7 +121,7 @@ void CoinHandler::taskLoop() {
 void CoinHandler::task() {
   xTaskCreatePinnedToCore(
     taskEntryPoint,
-    "CoinSensor",
+    "CoinHandler",
     2048,
     this,
     1,

@@ -8,11 +8,14 @@
 #include "CoinSensor/CoinSensor.cpp"
 #include "Receipt/Receipt.h"
 #include "Receipt/Receipt.cpp"
+#include "Servos/Servos.h"
+#include "Servos/Servos.cpp"
 
 SemaphoreHandle_t dataAvailableSemaphore;
 TaskHandle_t coinTask = NULL;
 TaskHandle_t billTask = NULL;
 TaskHandle_t receiptTask = NULL;
+TaskHandle_t servosTask = NULL;
 
 
 Credit credit;
@@ -25,7 +28,7 @@ Receipt receipt(credit, receiptTask);
 CoinHandler coinHandler(credit, sensorData, coinTask);
 BillHandler billHandler(credit, billTask);
 CoinSensor coinSensor(sensorData);
-
+Servos servos(servosTask);
 
 
 void setup() {
@@ -42,11 +45,12 @@ void setup() {
   
   coinSensor.begin(&sensorDataMutex);
 
-  coinHandler.begin(&coinSensor, &interfaceServer, &sensorDataMutex, receiptTask);
+  coinHandler.begin(&coinSensor, &interfaceServer, &sensorDataMutex, receiptTask, servosTask);
   coinHandler.task();
 
   billHandler.begin(&interfaceServer, receiptTask);
   billHandler.task();
+
   receipt.begin(&interfaceServer);
   receipt.task();
 

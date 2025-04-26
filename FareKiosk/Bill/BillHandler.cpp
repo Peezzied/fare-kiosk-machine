@@ -71,7 +71,7 @@ void BillHandler::taskEntryPoint(void* pvParameters) {
   // Wait indefinitely for notification with value 1
   if (xTaskNotifyWait(0, 0, &val, portMAX_DELAY)) {
     if (val == 2) {
-      // Notification with value 1 received, set the flag
+      // Notification with value 2 received, set the flag
       instance->isPulseReady = true;
       Serial.println("→ Bill task");
       BillHandler* instance = static_cast<BillHandler*>(pvParameters);
