@@ -12,6 +12,7 @@
 class BillHandler {
 private:
   TaskHandle_t &taskHandle;
+  TaskHandle_t receiptTask;
   volatile bool isPulseReady = false;
   
   Credit &credit;
@@ -35,6 +36,6 @@ private:
 
 public:
   BillHandler(Credit &creditObj, TaskHandle_t &handle);
-  void begin(InterfaceServer *interfaceServerObj);
+  void begin(InterfaceServer *interfaceServerObj, TaskHandle_t &receiptTaskObj);
   void task();
 };

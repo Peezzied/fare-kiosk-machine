@@ -6,10 +6,13 @@
 #include "Bill/BillHandler.cpp"
 #include "CoinSensor/CoinSensor.h"
 #include "CoinSensor/CoinSensor.cpp"
+#include "Receipt/Receipt.h"
+#include "Receipt/Receipt.cpp"
 
 SemaphoreHandle_t dataAvailableSemaphore;
 TaskHandle_t coinTask = NULL;
 TaskHandle_t billTask = NULL;
+TaskHandle_t receiptTask = NULL;
 
 
 Credit credit;
@@ -18,7 +21,7 @@ SemaphoreHandle_t sensorDataMutex;
 
 
 InterfaceServer interfaceServer;
-
+Receipt receipt(credit, receiptTask);
 CoinHandler coinHandler(credit, sensorData, coinTask);
 BillHandler billHandler(credit, billTask);
 CoinSensor coinSensor(sensorData);
@@ -28,11 +31,6 @@ CoinSensor coinSensor(sensorData);
 void setup() {
   sensorDataMutex = xSemaphoreCreateMutex();
   dataAvailableSemaphore = xSemaphoreCreateBinary();
-
-  if (dataAvailableSemaphore == NULL) {
-    Serial.println("Failed to create semaphore!");
-    while (true);  // Stay here if semaphore creation fails
-  }
 
   Serial.begin(115200);
   Serial.println();
@@ -44,11 +42,14 @@ void setup() {
   
   coinSensor.begin(&sensorDataMutex);
 
-  coinHandler.begin(&coinSensor, &interfaceServer, &sensorDataMutex);
+  coinHandler.begin(&coinSensor, &interfaceServer, &sensorDataMutex, receiptTask);
   coinHandler.task();
 
-  billHandler.begin(&interfaceServer);
+  billHandler.begin(&interfaceServer, receiptTask);
   billHandler.task();
+  receipt.begin(&interfaceServer);
+  receipt.task();
+
 
 }
 

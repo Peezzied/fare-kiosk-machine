@@ -16,13 +16,15 @@ void BillHandler::addCredit(int amount) {
 
 void BillHandler::checkFare(int fare) {
   taskENTER_CRITICAL(&billMux);
-  if ((credit.bill + credit.coin) == fare) {
-    // do something
+  if ((credit.bill + credit.coin) >= fare) {
+    Serial.println("TRANSACTION SUCCESS");
+    xTaskNotify(receiptTask, (1 << 0), eSetBits); 
   }
   taskEXIT_CRITICAL(&billMux);
 }
 
-void BillHandler::begin(InterfaceServer *interfaceServerObj) {
+void BillHandler::begin(InterfaceServer *interfaceServerObj, TaskHandle_t &receiptTaskObj) {
+  receiptTask = receiptTaskObj;
   Serial.println("BillHandler Initialized");
   pinMode(BILL_PIN, INPUT_PULLUP);  // Set the bill pin as input
   attachInterrupt(digitalPinToInterrupt(BILL_PIN), billIsr, FALLING);
@@ -38,7 +40,7 @@ void IRAM_ATTR BillHandler::billIsr() {
     if (now - instance->lastPulseMicros > instance->debounceMicros) {
       instance->lastPulseMicros = now;
       BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-      vTaskNotifyGiveFromISR(instance->taskHandle, &xHigherPriorityTaskWoken);
+      xTaskNotifyFromISR(instance->taskHandle, 3, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
       portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
   }
@@ -47,7 +49,7 @@ void IRAM_ATTR BillHandler::billIsr() {
 void BillHandler::processBill(int &pulseCount) {
   // Decode and print bill value
   int value = 0;
-  switch (pulseCount) {
+  switch (pulseCount - 1) {
     case 2: value = 20; break;
     case 5: value = 50; break;
     case 10: value = 100; break;
@@ -71,40 +73,43 @@ void BillHandler::taskEntryPoint(void* pvParameters) {
     if (val == 2) {
       // Notification with value 1 received, set the flag
       instance->isPulseReady = true;
+      Serial.println("→ Bill task");
       BillHandler* instance = static_cast<BillHandler*>(pvParameters);
-      instance->taskLoop(); // Call the task loop after flag is set
+      instance->taskLoop();  // Call the task loop after flag is set
     }
   }
 }
 
 void BillHandler::taskLoop() {
-
-
-
   int pulseCount = 0;
   unsigned long lastPulseTime = 0;
 
   for (;;) {
-    // Wait for ISR to notify pulse
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    uint32_t val = 0;
 
-    pulseCount++;
-    lastPulseTime = micros();
-
-    // Wait for end of pulse train
-    while (true) {
-      checkFare(interfaceServer->getTripData().fare);
-      if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
+    // Wait for notification with value 3 (this will block the task until notified)
+    if (xTaskNotifyWait(0, 0, &val, pdMS_TO_TICKS(10))) {
+      if (val == 3) {  // Only proceed if the value is 3
         pulseCount++;
         lastPulseTime = micros();
-      } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
-        break;
+
+        // Wait for end of pulse train
+        while (true) {
+          if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10))) {
+            pulseCount++;
+            lastPulseTime = micros();
+          } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
+            break;
+          }
+        }
+
+        processBill(pulseCount);
+        checkFare(interfaceServer->getTripData().fare);
       }
     }
-
-    processBill(pulseCount);
   }
 }
+
 
 void BillHandler::task() {
   xTaskCreatePinnedToCore(

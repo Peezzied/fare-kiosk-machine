@@ -16,13 +16,15 @@ void CoinHandler::addCredit(int amount) {
 
 void CoinHandler::checkFare(int fare) {
   taskENTER_CRITICAL(&coinMux);
-  if ((credit.bill + credit.coin) == fare) {
-    // do something
+  if ((credit.bill + credit.coin) >= fare) {
+    Serial.println("TRANSACTION SUCCESS");
+    xTaskNotify(receiptTask, (1 << 1), eSetBits); 
   }
   taskEXIT_CRITICAL(&coinMux);
 }
 
-void CoinHandler::begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj) {
+void CoinHandler::begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj) {
+  receiptTask = receiptTaskObj;
   Serial.println("CoinHandler Initialized");
   pinMode(COIN_PIN, INPUT_PULLUP);  // Set the coin pin as input
   attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinIsr, FALLING);
@@ -85,7 +87,7 @@ void CoinHandler::taskLoop() {
     lastPulseTime = micros();
 
     // checkSensors 
-    coinSensor->checkSensors();
+    // coinSensor->checkSensors();
 
     // rotary notification
 
@@ -114,6 +116,7 @@ void CoinHandler::taskLoop() {
 
     // maybe use mutex here if problem arises
     processCoin(pulseCount);
+    checkFare(interfaceServer->getTripData().fare);
   }
 }
 

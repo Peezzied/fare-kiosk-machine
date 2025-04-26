@@ -12,6 +12,7 @@
 class CoinHandler {
 private:
   TaskHandle_t &taskHandle;
+  TaskHandle_t receiptTask;
   TaskHandle_t rotaryHandle;
   volatile bool isPulseReady = false;
   
@@ -38,7 +39,7 @@ private:
 
 public:
   CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle);
-  void begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj);
+  void begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj);
   void task();
   void processCoin(int &pulse);
 };
