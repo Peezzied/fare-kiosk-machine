@@ -17,18 +17,20 @@ void BillHandler::addCredit(int amount) {
 void BillHandler::checkFare(int fare) {
   taskENTER_CRITICAL(&billMux);
   if ((credit.bill + credit.coin) >= fare) {
+    instance->isPulseReady = false;
     Serial.println("TRANSACTION SUCCESS");
     xTaskNotify(receiptTask, (1 << 0), eSetBits); 
+    Serial.println("Bill ISR");
   }
   taskEXIT_CRITICAL(&billMux);
 }
 
 void BillHandler::begin(InterfaceServer *interfaceServerObj, TaskHandle_t &receiptTaskObj) {
-  receiptTask = receiptTaskObj;
   Serial.println("BillHandler Initialized");
   pinMode(BILL_PIN, INPUT_PULLUP);  // Set the bill pin as input
   attachInterrupt(digitalPinToInterrupt(BILL_PIN), billIsr, FALLING);
 
+  receiptTask = receiptTaskObj;
   interfaceServer = interfaceServerObj;
 
   // Add inhibit pin logic if needed
@@ -60,6 +62,7 @@ void BillHandler::processBill(int &pulseCount) {
 
   if (value > 0) {
     addCredit(value);
+    Serial.printf("Pulse value: Php %d\n", value);
     Serial.printf("Bill inserted: Value = %d\n", credit.bill);
   }
 
@@ -104,7 +107,7 @@ void BillHandler::taskLoop() {
         }
 
         processBill(pulseCount);
-        checkFare(interfaceServer->getTripData().fare);
+        // checkFare(interfaceServer->getTripData().fare);
       }
     }
   }

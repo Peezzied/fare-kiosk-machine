@@ -9,18 +9,27 @@ void Servos::taskEntryPoint(void* pvParameters) {
 
 void Servos::taskLoop() {
   uint32_t notificationValue;
-
+  TickType_t lastActionTime = 0;
+  bool isServoAt90 = false;
 
   for (;;) {
-    servos[0].write(0);
-    if (xTaskNotifyWait(0x00, 0xFFFFFFFF, &notificationValue, portMAX_DELAY) == pdTRUE) {
+    if (xTaskNotifyWait(0x00, 0xFFFFFFFF, &notificationValue, 0) == pdTRUE) {
       if (notificationValue == 1) {
         servos[0].write(90);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        isServoAt90 = true;
+        lastActionTime = xTaskGetTickCount();
       }
     }
+
+    if (isServoAt90 && (xTaskGetTickCount() - lastActionTime >= pdMS_TO_TICKS(400))) {
+      servos[0].write(0);
+      isServoAt90 = false;
+    }
+
+    vTaskDelay(10 / portTICK_PERIOD_MS); // small delay to prevent busy loop
   }
 }
+
 
 // void dispenseChange(int changeAmount) {
 //   // Initialize counters for each coin type

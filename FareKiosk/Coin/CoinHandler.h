@@ -17,11 +17,8 @@ private:
   TaskHandle_t rotaryHandle;
   volatile bool isPulseReady = false;
   
-  CoinSensor *coinSensor;
   InterfaceServer *interfaceServer;
-  SensorData &sensorData;
   Credit &credit;
-  SemaphoreHandle_t *sensorDataMutex;
 
   static CoinHandler* instance;
 
@@ -39,8 +36,8 @@ private:
   void taskLoop();
 
 public:
-  CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle);
-  void begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj, TaskHandle_t &servosTaskObj);
+  CoinHandler(Credit &creditObj, TaskHandle_t &handle);
+  void begin(InterfaceServer *interfaceServerObj, TaskHandle_t &receiptTaskObj, TaskHandle_t &servosTaskObj);
   void task();
   void processCoin(int &pulse);
 };

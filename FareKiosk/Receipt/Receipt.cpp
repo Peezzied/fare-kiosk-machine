@@ -15,9 +15,7 @@ void Receipt::begin(InterfaceServer *interfaceServerObj) {
 }
 
 void Receipt::printTicket(const String &fare, const String &origin, const String &destination,
-                          const String &serialNumber, const String &date, const String &time, const String &pay, const String &passenger) {
-  printer.begin();
-  delay(2000);
+                          const String &serialNumber, const String &date, const String &time, const String &pay, const String &passenger, const String &change) {
 
   // Text formatting
   printer.setCharset(0);
@@ -31,7 +29,7 @@ void Receipt::printTicket(const String &fare, const String &origin, const String
 
   // Fare
   printer.setSize('L');
-  printer.println("\n" + fare);
+  printer.println("\nPhp" + fare);
 
   // Route
   printer.setSize('M');
@@ -44,6 +42,10 @@ void Receipt::printTicket(const String &fare, const String &origin, const String
   printer.println("\n\nSN: " + serialNumber + "  DATE: " + date);
   printer.println("TIME: " + time + "    TYPE: " + passenger);
   printer.println("Paid: " + pay);
+
+  if (change != "0") {
+    printer.println("    Change: " + change);
+  }
 
   // Barcode
   printer.justify('C');
@@ -74,8 +76,9 @@ void Receipt::taskLoop() {
     String time = interfaceServer->getTripData().time;
     String pay = String(credit.bill + credit.coin);
     String passenger = interfaceServer->getTripData().passenger;
+    String change = String(pay.toInt() - interfaceServer->getTripData().fare);
 
-    printTicket(fare, origin, destination, serialNumber, date, time, pay, passenger);
+    printTicket(fare, origin, destination, serialNumber, date, time, pay, passenger, change);
     interfaceServer->sendJsonToClient();
 
   }

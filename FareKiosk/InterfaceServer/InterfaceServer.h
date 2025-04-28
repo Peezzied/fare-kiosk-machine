@@ -10,9 +10,10 @@ class InterfaceServer {
 private:
 
   const char *apSSID = "Malinta to Novaliches Transit";
-  // const char *staSSID = "Converge_2.4GHz_23F7";
-  const char *staSSID = "GlobeAtHome_82B2E_2.4";
-  const char *password = "RMM7cCbU";
+  const char *staSSID = "Converge_2.4GHz_23F7";
+  // const char *staSSID = "GlobeAtHome_82B2E_2.4";
+  // const char *password = "RMM7cCbU";
+  const char *password = "5bDRg6Tc";
 
   SemaphoreHandle_t *dataAvailableSemaphore;
   AsyncWebSocketClient* connectedClient = nullptr;

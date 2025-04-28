@@ -19,20 +19,19 @@ TaskHandle_t servosTask = NULL;
 
 
 Credit credit;
-SensorData sensorData;
-SemaphoreHandle_t sensorDataMutex;
+// SensorData sensorData;
+// SemaphoreHandle_t sensorDataMutex;
 
 
 InterfaceServer interfaceServer;
 Receipt receipt(credit, receiptTask);
-CoinHandler coinHandler(credit, sensorData, coinTask);
+CoinHandler coinHandler(credit, coinTask);
 BillHandler billHandler(credit, billTask);
-CoinSensor coinSensor(sensorData);
+// CoinSensor coinSensor(sensorData);
 Servos servos(servosTask);
 
 
 void setup() {
-  sensorDataMutex = xSemaphoreCreateMutex();
   dataAvailableSemaphore = xSemaphoreCreateBinary();
 
   Serial.begin(115200);
@@ -42,17 +41,20 @@ void setup() {
 
   interfaceServer.begin(&billTask, &coinTask);
   interfaceServer.beginWebsocket();
-  
-  coinSensor.begin(&sensorDataMutex);
 
-  coinHandler.begin(&coinSensor, &interfaceServer, &sensorDataMutex, receiptTask, servosTask);
+  servos.begin();
+  servos.task();
+  
+  // coinSensor.begin(&sensorDataMutex);
+  receipt.begin(&interfaceServer);
+  receipt.task();
+
+  coinHandler.begin(&interfaceServer, receiptTask, servosTask);
   coinHandler.task();
 
   billHandler.begin(&interfaceServer, receiptTask);
   billHandler.task();
 
-  receipt.begin(&interfaceServer);
-  receipt.task();
 
 
 }

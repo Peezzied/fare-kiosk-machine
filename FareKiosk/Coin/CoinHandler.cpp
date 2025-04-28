@@ -3,8 +3,8 @@
 
 CoinHandler* CoinHandler::instance = nullptr;
 
-CoinHandler::CoinHandler(Credit &creditObj, SensorData &sensorDataObj, TaskHandle_t &handle) 
-  : credit(creditObj), taskHandle(handle), sensorData(sensorDataObj), coinSensor(nullptr), sensorDataMutex(nullptr), interfaceServer(nullptr) {
+CoinHandler::CoinHandler(Credit &creditObj, TaskHandle_t &handle) 
+  : credit(creditObj), taskHandle(handle), interfaceServer(nullptr) {
   instance = this;
 }
 
@@ -17,13 +17,14 @@ void CoinHandler::addCredit(int amount) {
 void CoinHandler::checkFare(int fare) {
   taskENTER_CRITICAL(&coinMux);
   if ((credit.bill + credit.coin) >= fare) {
+    instance->isPulseReady = false;
     Serial.println("TRANSACTION SUCCESS");
     xTaskNotify(receiptTask, (1 << 1), eSetBits); 
   }
   taskEXIT_CRITICAL(&coinMux);
 }
 
-void CoinHandler::begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceServerObj, SemaphoreHandle_t *sensorDataMutexObj, TaskHandle_t &receiptTaskObj, TaskHandle_t &servosTaskObj) {
+void CoinHandler::begin(InterfaceServer *interfaceServerObj, TaskHandle_t &receiptTaskObj, TaskHandle_t &servosTaskObj) {
   servosTask = servosTaskObj;
   receiptTask = receiptTaskObj;
   Serial.println("CoinHandler Initialized");
@@ -31,19 +32,18 @@ void CoinHandler::begin(CoinSensor *coinSensorObj, InterfaceServer *interfaceSer
   attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinIsr, FALLING);
   
   interfaceServer = interfaceServerObj;
-  coinSensor = coinSensorObj;
-  sensorDataMutex = sensorDataMutexObj;
   // Add inhibit pin logic if needed
 }
 
 void IRAM_ATTR CoinHandler::coinIsr() {
-  if (instance) {
+  if (instance && instance->isPulseReady) {
     unsigned long now = micros();
     if (now - instance->lastPulseMicros > instance->debounceMicros) {
       instance->lastPulseMicros = now;
       BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-      vTaskNotifyGiveFromISR(instance->taskHandle, &xHigherPriorityTaskWoken);
+      xTaskNotifyFromISR(instance->taskHandle, 3, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
       portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+      Serial.println("Coin ISR");
     }
   }
 }
@@ -51,8 +51,8 @@ void IRAM_ATTR CoinHandler::coinIsr() {
 void CoinHandler::processCoin(int &pulseCount) {
   // Decode and print coin value
   int value = 0;
-  switch (pulseCount) {
-    case 1: value = 10; xTaskNotify(servosTask, 1, eSetValueWithOverwrite); break;
+  switch (pulseCount - 1) {
+    case 1: value = 10; break;
     case 2: value = 1; break;
     case 3: value = 5; break;
     case 4: value = 20; break;
@@ -63,6 +63,7 @@ void CoinHandler::processCoin(int &pulseCount) {
 
   if (value > 0) {
     addCredit(value);
+    Serial.printf("Pulse value Php %d\n", value);
     Serial.printf("Coin inserted: Value = %d\n", credit.coin);
   }
 
@@ -108,13 +109,12 @@ void CoinHandler::taskLoop() {
           } else if (micros() - lastPulseTime > pulseTimeoutMicros) {
             break;
           }
+          // maybe use mutex here if problem arises
         }
+        processCoin(pulseCount);
+        // checkFare(interfaceServer->getTripData().fare);
       }
     }
-
-    // maybe use mutex here if problem arises
-    processCoin(pulseCount);
-    checkFare(interfaceServer->getTripData().fare);
   }
 }
 
